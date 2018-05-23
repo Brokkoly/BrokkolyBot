@@ -3,7 +3,8 @@ import discord
 import re
 import tokens
 import madisontokens
-accountabilityID = tokens.accountabilityID
+import random
+accountability = tokens.accountability
 TOKEN = tokens.TOKEN
 accountabilityMessages = []
 accountabilityDates = []
@@ -36,18 +37,20 @@ async def on_message(message):
         #print("has Nickname")
         nick = message.author.nick
     
-    if message.content.startswith('!bless'):
-        if(str(message.author) == "Brokkoly#0001"):
-            for m in messages[:-1:-1]:
-
+    #if message.content.startswith('!bless'):
+    '''
+    if(str(message.author) == "RedCloakedCrow#3318"):
+        if(random.randint(0,10000)<= 10):
             await client.add_reaction(message,"\N{EYE}")
             await client.add_reaction(message,"\N{PERSON WITH FOLDED HANDS}")
             await client.add_reaction(message,"\N{CLOUD WITH RAIN}")
             await client.add_reaction(message,"\N{DOWNWARDS BLACK ARROW}")
             await client.add_reaction(message,"\N{EARTH GLOBE EUROPE-AFRICA}")
+    '''
     if message.mention_everyone:
         msg = 'Don\'t do that {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
+
     if message.content.startswith('!hello'):
         msg = 'Hello {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
@@ -85,7 +88,7 @@ async def on_ready():
     print(client.user.id)
     print('------')
     #print(client.servers)
-    accountabilityChannel = client.get_channel(accountabilityID)
+    accountabilityChannel = client.get_channel(accountability)
     #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
     regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
 
