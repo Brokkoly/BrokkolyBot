@@ -13,7 +13,9 @@ accountabilityDates = []
 #accountabilityLoad = 0
 
 lastDRS = 0.0
-highscore = 0.0
+lastRL = 0.0
+highscoreDRS = 0.0
+highscoreRL = 0.0
 #global gotChannels = 0
 ready = False
 
@@ -24,7 +26,9 @@ client = discord.Client()
 async def on_message(message):
     # we do not want the bot to reply to itself
     global lastDRS
-    global highscore
+    global highscoreDRS
+    global lastRL
+    global highscoreRL
     if message.author == client.user:
         return
     if message.server.id == "225374061386006528":#"329746807599136769":
@@ -35,23 +39,23 @@ async def on_message(message):
 
             msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
 
-            if(time_since > highscore):
-                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscore
-                highscore = time_since
+            if(time_since > highscoreDRS):
+                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreDRS
+                highscoreDRS = time_since
 
             await client.send_message(message.channel,msg)
         if message.content.startswith("!checkdrs"):
             time_since = (time.time()-lastDRS)/86400.0
-            msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscore)
+            msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreDRS)
         if(message.content.startswith("!rl")):
             time_since = (time.time()-lastDRS)/86400.0
             lastDRS = time.time()
 
             msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
 
-            if(time_since > highscore):
-                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscore
-                highscore = time_since
+            if(time_since > highscoreRL):
+                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreRL
+                highscoreRL = time_since
 
             await client.send_message(message.channel,msg)
         if message.content.startswith("!checkrl"):
@@ -131,9 +135,9 @@ async def on_ready():
     print(client.user.id)
     print('------')
     global lastDRS
-    
+    global lastRL
     lastDRS = time.time()
-    print(lastDRS)
+    lastRL = time.time()
     #print(client.servers)
     accountabilityChannel = client.get_channel(accountability)
     #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
