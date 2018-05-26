@@ -11,41 +11,64 @@ accountabilityMessages = []
 accountabilityDates = []
 #checkReaction = discord.reaction()
 #accountabilityLoad = 0
-client = discord.Client()
-lastDRS = time.time()
+
+lastDRS = 0.0
 highscore = 0.0
 #global gotChannels = 0
+ready = False
+
+
+client = discord.Client()
+
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
-
-
+    global lastDRS
+    global highscore
     if message.author == client.user:
         return
-    if message.server == "225374061386006528":#"329746807599136769":
+    if message.server.id == "225374061386006528":#"329746807599136769":
         ###Legacy Discord, only currently uses 
         if(message.content.startswith("!drs")):
-            time_since = (lastDRS-time.time())/86400
+            time_since = (time.time()-lastDRS)/86400.0
             lastDRS = time.time()
 
-            msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.2f days without talking about it"%time_since
+            msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
 
             if(time_since > highscore):
-                msg = msg + "\nYou set a new high score! The previous high score was %.2f days!"%highscore
+                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscore
                 highscore = time_since
 
             await client.send_message(message.channel,msg)
+        if message.content.startswith("!checkdrs"):
+            time_since = (time.time()-lastDRS)/86400.0
+            msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscore)
+        if(message.content.startswith("!rl")):
+            time_since = (time.time()-lastDRS)/86400.0
+            lastDRS = time.time()
+
+            msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
+
+            if(time_since > highscore):
+                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscore
+                highscore = time_since
+
+            await client.send_message(message.channel,msg)
+        if message.content.startswith("!checkrl"):
+            time_since = (time.time()-lastDRS)/86400.0
+            msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscore)
+
             
 
     #print(message.author.nick)
     #print(message.channel.id)
-    print(message.server)
-    print(message.server.id)
+    #print(message.server)
+    #print(message.server.id)
     #if(not gotChannels):
-    for chan in message.server.channels:
-        print(chan.name+" = \""+chan.id+"\"")
+    #for chan in message.server.channels:
+    #    print(chan.name+" = \""+chan.id+"\"")
         #gotChannels = 1
-    print(str(message.author))
+    #print(str(message.author))
     #if message.author is "Brokkoly#0001":
     #    return
     #print(type(message.author.nick))
@@ -107,6 +130,10 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
+    global lastDRS
+    
+    lastDRS = time.time()
+    print(lastDRS)
     #print(client.servers)
     accountabilityChannel = client.get_channel(accountability)
     #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
@@ -128,8 +155,8 @@ async def on_ready():
                 #print(type(reaction.emoji))
                 #print(message.get_reaction_users())
             #check for 
-
-
+    print("READY")
+    ready = True
 
 #def on_load_accountability():
 
