@@ -13,10 +13,10 @@ accountabilityDates = []
 #checkReaction = discord.reaction()
 #accountabilityLoad = 0
 
-#lastDRS = 0.0
-#lastRL = 0.0
-#highscoreDRS = 0.0
-#highscoreRL = 0.0
+lastDRS = 0.0
+lastRL = 0.0
+highscoreDRS = 0.0
+highscoreRL = 0.0
 #global gotChannels = 0
 ready = False
 
@@ -61,7 +61,7 @@ async def on_message(message):
             await client.send_message(message.channel,msg)
         if message.content.startswith("!checkrl"):
             time_since = (time.time()-lastDRS)/86400.0
-            msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscore)
+            msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreRL)
 
         return    
 
@@ -135,11 +135,15 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
-    #global lastDRS
-    #global lastRL
+    global lastDRS
+    global lastRL
     #lastDRS = time.time()
     #lastRL = time.time()
     #print(client.servers)
+    if(lastDRS == 0.0):
+        lastDRS = time.time()
+    if(lastRL == 0.0):
+        lastRL = time.time()
     accountabilityChannel = client.get_channel(accountability)
     #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
     regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
@@ -175,10 +179,14 @@ def loadStuff():
     global highscoreDRS
     global highscoreRL
     rfile = open("botstuff.txt","r")
-    lastDRS = int(rfile.readline())
-    lastRL = int(rfile.readline())
-    highscoreDRS = int(rfile.readline())
-    highscoreRL = int(rfile.readline())
+    lastDRS = float(rfile.readline())
+    print("lastdrs: %f"%lastDRS)
+    lastRL = float(rfile.readline())
+    print("lastRL: %f"%lastRL)
+    highscoreDRS = float(rfile.readline())
+    print("highscoredrs: %f"%highscoreDRS)
+    highscoreRL = float(rfile.readline())
+    print("highscoreRL: %f"%highscoreRL)
     rfile.close()
 
 def saveStuff():
@@ -187,10 +195,10 @@ def saveStuff():
     global highscoreDRS
     global highscoreRL
     wfile = open("botstuff.txt","w+")
-    wfile.write(lastDRS)
-    wfile.write(lastRL)
-    wfile.write(highscoreDRS)
-    wfile.write(highscoreRL)
+    wfile.write(str(lastDRS)+"\n")
+    wfile.write(str(lastRL)+"\n")
+    wfile.write(str(highscoreDRS)+"\n")
+    wfile.write(str(highscoreRL)+"\n")
     wfile.close()
 atexit.register(saveStuff)
 loadStuff()
