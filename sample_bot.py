@@ -5,6 +5,7 @@ import tokens
 import madisontokens
 import random
 import time
+import atexit
 accountability = madisontokens.accountability
 TOKEN = tokens.TOKEN
 accountabilityMessages = []
@@ -12,10 +13,10 @@ accountabilityDates = []
 #checkReaction = discord.reaction()
 #accountabilityLoad = 0
 
-lastDRS = 0.0
-lastRL = 0.0
-highscoreDRS = 0.0
-highscoreRL = 0.0
+#lastDRS = 0.0
+#lastRL = 0.0
+#highscoreDRS = 0.0
+#highscoreRL = 0.0
 #global gotChannels = 0
 ready = False
 
@@ -62,7 +63,7 @@ async def on_message(message):
             time_since = (time.time()-lastDRS)/86400.0
             msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscore)
 
-            
+        return    
 
     #print(message.author.nick)
     #print(message.channel.id)
@@ -134,10 +135,10 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
-    global lastDRS
-    global lastRL
-    lastDRS = time.time()
-    lastRL = time.time()
+    #global lastDRS
+    #global lastRL
+    #lastDRS = time.time()
+    #lastRL = time.time()
     #print(client.servers)
     accountabilityChannel = client.get_channel(accountability)
     #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
@@ -168,4 +169,29 @@ def ban_drs_check(message,client):
     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
 
 
+def loadStuff():
+    global lastDRS
+    global lastRL
+    global highscoreDRS
+    global highscoreRL
+    rfile = open("botstuff.txt","r")
+    lastDRS = int(rfile.readline())
+    lastRL = int(rfile.readline())
+    highscoreDRS = int(rfile.readline())
+    highscoreRL = int(rfile.readline())
+    rfile.close()
+
+def saveStuff():
+    global lastDRS
+    global lastRL
+    global highscoreDRS
+    global highscoreRL
+    wfile = open("botstuff.txt","w+")
+    wfile.write(lastDRS)
+    wfile.write(lastRL)
+    wfile.write(highscoreDRS)
+    wfile.write(highscoreRL)
+    wfile.close()
+atexit.register(saveStuff)
+loadStuff()
 client.run(TOKEN)
