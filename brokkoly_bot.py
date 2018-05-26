@@ -38,8 +38,6 @@ async def on_message(message):
         return
     if message.server.id == "225374061386006528":#"329746807599136769":
         ###Legacy Discord, only currently uses the drs and rL commands
-        print("Roles:")
-        print(str(message.author.roles[1].id))
 
         if(message.author.roles.id == "449799376387440642"):
 
