@@ -30,40 +30,59 @@ async def on_message(message):
     global highscoreDRS
     global lastRL
     global highscoreRL
+    
+    #print(client.user.name)
+    #print(str(message.author))
+
     if message.author == client.user:
         return
     if message.server.id == "225374061386006528":#"329746807599136769":
-        ###Legacy Discord, only currently uses 
-        if(message.content.startswith("!drs")):
-            time_since = (time.time()-lastDRS)/86400.0
-            lastDRS = time.time()
+        ###Legacy Discord, only currently uses the drs and rL commands
+        print("Roles:")
+        print(str(message.author.roles[1].id))
 
-            msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
+        if(message.author.roles.id == "449799376387440642"):
 
-            if(time_since > highscoreDRS):
-                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreDRS
-                highscoreDRS = time_since
+            if(message.content.startswith("!drs")):
+                time_since = (time.time()-lastDRS)/86400.0
+                lastDRS = time.time()
+                print(lastDRS)
+                msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
 
-            await client.send_message(message.channel,msg)
-        if message.content.startswith("!checkdrs"):
-            time_since = (time.time()-lastDRS)/86400.0
-            msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreDRS)
-        if(message.content.startswith("!rl")):
-            time_since = (time.time()-lastDRS)/86400.0
-            lastDRS = time.time()
+                if(time_since > highscoreDRS):
+                    msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreDRS
+                    highscoreDRS = time_since
 
-            msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
+                await client.send_message(message.channel,msg)
+                return
+            if message.content.startswith("!checkdrs"):
+                time_since = (time.time()-lastDRS)/86400.0
+                msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreDRS)
+                await client.send_message(message.channel,msg)
+                return
+            if(message.content.startswith("!rl")):
+                time_since = (time.time()-lastDRS)/86400.0
+                lastDRS = time.time()
 
-            if(time_since > highscoreRL):
-                msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreRL
-                highscoreRL = time_since
+                msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
 
-            await client.send_message(message.channel,msg)
-        if message.content.startswith("!checkrl"):
-            time_since = (time.time()-lastDRS)/86400.0
-            msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreRL)
-
-        return    
+                if(time_since > highscoreRL):
+                    msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreRL
+                    highscoreRL = time_since
+                await client.send_message(message.channel,msg)
+                return
+            if message.content.startswith("!checkrl"):
+                time_since = (time.time()-lastDRS)/86400.0
+                msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreRL)
+                return
+            if message.content.startswith("!help"):
+                msg = "!drs: mark a new deathrite banning conversation\n"
+                msg = msg+"!rl: mark a new reserved list conversation\n"
+                msg = msg+"!drscheck: check the time since and highscore for the deathrite clock"
+                msg = msg+"!rlcheck: check the time since and highscore for the reserved list clock"
+                await client.send_message(message.channel,msg)
+                return
+        return
 
     #print(message.author.nick)
     #print(message.channel.id)
@@ -76,7 +95,7 @@ async def on_message(message):
     #print(str(message.author))
     #if message.author is "Brokkoly#0001":
     #    return
-    #print(type(message.author.nick))
+    print(type(message.author.nick))
     if(str(message.author.nick) == "None"):
         #no nickname
         nick = message.author.name
@@ -165,7 +184,6 @@ async def on_ready():
                 #print(message.get_reaction_users())
             #check for 
     print("READY")
-    ready = True
 
 #def on_load_accountability():
 
