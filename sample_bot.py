@@ -4,19 +4,39 @@ import re
 import tokens
 import madisontokens
 import random
-accountability = tokens.accountability
+import time
+accountability = madisontokens.accountability
 TOKEN = tokens.TOKEN
 accountabilityMessages = []
 accountabilityDates = []
 #checkReaction = discord.reaction()
 #accountabilityLoad = 0
 client = discord.Client()
+lastDRS = time.time()
+highscore = 0.0
 #global gotChannels = 0
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
+
+
     if message.author == client.user:
         return
+    if message.server == "225374061386006528":#"329746807599136769":
+        ###Legacy Discord, only currently uses 
+        if(message.content.startswith("!drs")):
+            time_since = (lastDRS-time.time())/86400
+            lastDRS = time.time()
+
+            msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.2f days without talking about it"%time_since
+
+            if(time_since > highscore):
+                msg = msg + "\nYou set a new high score! The previous high score was %.2f days!"%highscore
+                highscore = time_since
+
+            await client.send_message(message.channel,msg)
+            
+
     #print(message.author.nick)
     #print(message.channel.id)
     print(message.server)
@@ -112,6 +132,9 @@ async def on_ready():
 
 
 #def on_load_accountability():
+
+def ban_drs_check(message,client):
+    regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
 
 
 client.run(TOKEN)
