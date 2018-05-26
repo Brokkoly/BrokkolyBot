@@ -6,10 +6,13 @@ import madisontokens
 import random
 import time
 import atexit
+import datetime
+#import numpy as np
 accountability = madisontokens.accountability
 TOKEN = tokens.TOKEN
 accountabilityMessages = []
 accountabilityDates = []
+#accountabilityMessages = np.empty(0,2)
 #checkReaction = discord.reaction()
 #accountabilityLoad = 0
 
@@ -93,7 +96,7 @@ async def on_message(message):
     #print(str(message.author))
     #if message.author is "Brokkoly#0001":
     #    return
-    print(type(message.author.nick))
+    #print(type(message.author.nick))
     if(str(message.author.nick) == "None"):
         #no nickname
         nick = message.author.name
@@ -154,6 +157,7 @@ async def on_ready():
     print('------')
     global lastDRS
     global lastRL
+    global accountabilityMessages
     #lastDRS = time.time()
     #lastRL = time.time()
     #print(client.servers)
@@ -168,13 +172,25 @@ async def on_ready():
 
 
     async for message in client.logs_from(accountabilityChannel):
+
         result = regexp.search(message.content)
         if(result): #is an accountable object
-            print(message.content)
-            #for user in message.get_reaction_users():
-            #    if(user == message.author):
-            #        print("completed")
+            #res = await client.wait_for_reaction(['✅'],user = message.author,timeout = .5,message = message)
+            
+            msg = await client.get_message(accountabilityChannel,message.id)
+            #res = await client.wait_for_reaction(timeout = .5,message = msg)#,user = message.author)
+            #print(res)
+            isThere = False
+            for i in msg.reactions:
+                i = i.emoji
+                if(i == "\N{White Heavy Check Mark}"):
+                    isThere = True
+                    break
+            if(not isThere):
+                dueDate = datetime.datetime.strptime(result[0],"%m/%d/%y")
+                messageId = message.id
 
+                    #for now, assume reacting to your own post marks it done
             #for reaction in message.reactions:
                 #print(reaction.emoji)
                 #print(reaction.message.author)
