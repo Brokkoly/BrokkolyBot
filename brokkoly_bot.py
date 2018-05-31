@@ -131,7 +131,7 @@ async def on_message(message):
         msg = msg.format(message)
         await client.send_message(message.channel, msg)
     '''
-    if message.content.startswith('!cclap'):
+    if message.content.startswith('!clap'):
         msg = "%s: "%nick
         msg = msg + message.content[6:].replace(" "," :clap: ")+" :clap:"
         #id = message.id
@@ -147,6 +147,7 @@ async def on_message(message):
             print("Don't have permissions")
         except discord.HTTPException:
             print("Other Error")
+    if message.content.startswith('!help')
 
 
 @client.event
