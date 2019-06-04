@@ -147,7 +147,7 @@ async def on_message(message):
             print("Don't have permissions")
         except discord.HTTPException:
             print("Other Error")
-    if message.content.startswith('!help')
+    #if message.content.startswith('!help')
 
 
 @client.event
