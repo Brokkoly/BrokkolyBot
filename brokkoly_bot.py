@@ -118,10 +118,11 @@ async def on_message(message):
     if message.mention_everyone:
         msg = 'Don\'t do that {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
-
+    '''
     if message.content.startswith('!hello'):
         msg = 'Hello {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
+    '''
     '''
     if message.content.startswith('!clap'):
         msg = "%s: "%message.author.nick
@@ -130,6 +131,7 @@ async def on_message(message):
         #msg = msg + " :clap:"
         msg = msg.format(message)
         await client.send_message(message.channel, msg)
+    '''
     '''
     if message.content.startswith('!clap'):
         msg = "%s: "%nick
@@ -148,6 +150,7 @@ async def on_message(message):
         except discord.HTTPException:
             print("Other Error")
     #if message.content.startswith('!help')
+    '''
 
 
 @client.event
@@ -158,7 +161,7 @@ async def on_ready():
     print('------')
     global lastDRS
     global lastRL
-    global accountabilityMessages
+    
     #lastDRS = time.time()
     #lastRL = time.time()
     #print(client.servers)
@@ -171,7 +174,7 @@ async def on_ready():
     regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
 
 
-
+'''
     async for message in client.logs_from(accountabilityChannel):
 
         result = regexp.search(message.content)
@@ -201,9 +204,31 @@ async def on_ready():
     print("READY")
 
 #def on_load_accountability():
-
+'''
 def ban_drs_check(message,client):
     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
+
+def legacyServerTest():
+    general_channel_id='329746807599136769'
+    general_channel=get_channel(general_channel_id)
+    scryfall = member_id("268547439714238465")
+    messageVals = []
+    #reactionVals = []
+    regexstr=re.compile(r'')
+    async for message in channel.history(limit=100):
+        if message.author=scryfall:
+            continue
+        else:
+            messageVals = parse_message(message)
+            #reactionVals= parseReactions(message)
+def parse_message(message,regexstr):
+    retval=[]
+    retval=retval.append(message.author.id)
+    retval=retval.append(message.channel.id)
+    custom_emojis = re.findall(r'<:\w*:\d*>', msg.content)
+    custom_emojis = [int(e.split(':')[1].replace('>', '')) for e in custom_emojis]
+    custom_emojis = [discord.utils.get(client.get_all_emojis(), id=e) for e in custom_emojis]
+
 
 
 def loadStuff():
