@@ -174,7 +174,7 @@ async def legacyServerTest():
     regexstr = re.compile(r'')
     #messages = await channel.history(limit=1000).flatten()
     messagenum=0
-    async for message in channel.history(limit=100):
+    async for message in channel.history(limit=None):
         if message.author.id==scryfallid:
             continue
         elif message.author.id!=146687253370896385:
@@ -197,8 +197,8 @@ def parse_message(message):
     retval.append(message.channel.id)
     retval.append(message.created_at)
     custom_emojis = re.findall(r'<:\w*:\d*>', message.content)
-    print(message.content)
-    print(custom_emojis)
+    #print(message.content)
+    #rint(custom_emojis)
     custom_emojis = [int(e.split(':')[2].replace('>', '')) for e in custom_emojis]
     #custom_emojis = [client.get_emoji(e) for e in custom_emojis]
     retval.append(custom_emojis)
@@ -215,6 +215,7 @@ def compileNumbers(messages):
             else:
                 data[str(e)]=1
     print(data)
+    print("Length of dict: {}".format(len(data.keys())))
     for e in data:
         print(e)
         #print(discord.utils.get(client.emojis,id=int(e)))
