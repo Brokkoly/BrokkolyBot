@@ -2,29 +2,17 @@
 import discord
 import re
 import tokens
-import madisontokens
 import random
 import time
+import asyncio
 import atexit
 import datetime
-#import numpy as np
-accountability = madisontokens.accountability
+import numpy as np
 TOKEN = tokens.TOKEN
-accountabilityMessages = []
-accountabilityDates = []
-#accountabilityMessages = np.empty(0,2)
-#checkReaction = discord.reaction()
-#accountabilityLoad = 0
 
-lastDRS = 0.0
-lastRL = 0.0
-highscoreDRS = 0.0
-highscoreRL = 0.0
-#global gotChannels = 0
 ready = False
-
-
 client = discord.Client()
+
 
 @client.event
 async def on_message(message):
@@ -39,56 +27,57 @@ async def on_message(message):
 
     if message.author == client.user:
         return
-    if message.server.id == "225374061386006528":#"329746807599136769":
+    if (message.guild.id == "225374061386006528")and(message.channel.id == "329746807599136769"):#"329746807599136769":
         ###Legacy Discord, only currently uses the drs and rL commands
 
-        if(message.author.roles.id == "449799376387440642"):
+        # if(message.author.roles.id == "449799376387440642"):
+        #
+        #     if(message.content.startswith("!drs")):
+        #         time_since = (time.time()-lastDRS)/86400.0
+        #         lastDRS = time.time()
+        #         print(lastDRS)
+        #         msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
+        #
+        #         if(time_since > highscoreDRS):
+        #             msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreDRS
+        #             highscoreDRS = time_since
+        #
+        #         await client.send_message(message.channel,msg)
+        #         return
+        #     if message.content.startswith("!checkdrs"):
+        #         time_since = (time.time()-lastDRS)/86400.0
+        #         msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreDRS)
+        #         await client.send_message(message.channel,msg)
+        #         return
+        #     if(message.content.startswith("!rl")):
+        #         time_since = (time.time()-lastDRS)/86400.0
+        #         lastDRS = time.time()
+        #
+        #         msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
+        #
+        #         if(time_since > highscoreRL):
+        #             msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreRL
+        #             highscoreRL = time_since
+        #         await client.send_message(message.channel,msg)
+        #         return
+        #     if message.content.startswith("!checkrl"):
+        #         time_since = (time.time()-lastDRS)/86400.0
+        #         msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreRL)
+        #         return
+        #     if message.content.startswith("!help"):
+        #         msg = "!drs: mark a new deathrite banning conversation\n"
+        #         msg = msg+"!rl: mark a new reserved list conversation\n"
+        #         msg = msg+"!drscheck: check the time since and highscore for the deathrite clock"
+        #         msg = msg+"!rlcheck: check the time since and highscore for the reserved list clock"
+        #         await client.send_message(message.channel,msg)
+        #         return
 
-            if(message.content.startswith("!drs")):
-                time_since = (time.time()-lastDRS)/86400.0
-                lastDRS = time.time()
-                print(lastDRS)
-                msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
+        print(message.author.nick)
+        print(message.channel.id)
+        print(message.guild)
+        print(message.guild.id)
 
-                if(time_since > highscoreDRS):
-                    msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreDRS
-                    highscoreDRS = time_since
-
-                await client.send_message(message.channel,msg)
-                return
-            if message.content.startswith("!checkdrs"):
-                time_since = (time.time()-lastDRS)/86400.0
-                msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreDRS)
-                await client.send_message(message.channel,msg)
-                return
-            if(message.content.startswith("!rl")):
-                time_since = (time.time()-lastDRS)/86400.0
-                lastDRS = time.time()
-
-                msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
-
-                if(time_since > highscoreRL):
-                    msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreRL
-                    highscoreRL = time_since
-                await client.send_message(message.channel,msg)
-                return
-            if message.content.startswith("!checkrl"):
-                time_since = (time.time()-lastDRS)/86400.0
-                msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreRL)
-                return
-            if message.content.startswith("!help"):
-                msg = "!drs: mark a new deathrite banning conversation\n"
-                msg = msg+"!rl: mark a new reserved list conversation\n"
-                msg = msg+"!drscheck: check the time since and highscore for the deathrite clock"
-                msg = msg+"!rlcheck: check the time since and highscore for the reserved list clock"
-                await client.send_message(message.channel,msg)
-                return
         return
-
-    #print(message.author.nick)
-    #print(message.channel.id)
-    #print(message.server)
-    #print(message.server.id)
     #if(not gotChannels):
     #for chan in message.server.channels:
     #    print(chan.name+" = \""+chan.id+"\"")
@@ -165,69 +154,74 @@ async def on_ready():
     #lastDRS = time.time()
     #lastRL = time.time()
     #print(client.servers)
-    if(lastDRS == 0.0):
-        lastDRS = time.time()
-    if(lastRL == 0.0):
-        lastRL = time.time()
-    accountabilityChannel = client.get_channel(accountability)
-    #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
-    regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
+    #if(lastDRS == 0.0):
+    #    lastDRS = time.time()
+    #if(lastRL == 0.0):
+    #    lastRL = time.time()
+    #regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
+    await legacyServerTest()
 
 
-'''
-    async for message in client.logs_from(accountabilityChannel):
-
-        result = regexp.search(message.content)
-        if(result): #is an accountable object
-            #res = await client.wait_for_reaction(['✅'],user = message.author,timeout = .5,message = message)
-            
-            msg = await client.get_message(accountabilityChannel,message.id)
-            #res = await client.wait_for_reaction(timeout = .5,message = msg)#,user = message.author)
-            #print(res)
-            isThere = False
-            for i in msg.reactions:
-                i = i.emoji
-                if(i == "\N{White Heavy Check Mark}"):
-                    isThere = True
-                    break
-            if(not isThere):
-                dueDate = datetime.datetime.strptime(result[0],"%m/%d/%y")
-                messageId = message.id
-
-                    #for now, assume reacting to your own post marks it done
-            #for reaction in message.reactions:
-                #print(reaction.emoji)
-                #print(reaction.message.author)
-                #print(type(reaction.emoji))
-                #print(message.get_reaction_users())
-            #check for 
-    print("READY")
-
-#def on_load_accountability():
-'''
 def ban_drs_check(message,client):
     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
 
-def legacyServerTest():
-    general_channel_id='329746807599136769'
-    general_channel=get_channel(general_channel_id)
-    scryfall = member_id("268547439714238465")
-    messageVals = []
+async def legacyServerTest():
+    general_channel_id=329746807599136769
+    channel=client.get_channel(general_channel_id)
+    scryfallid = 268547439714238465
+    extractedMessages=[]
     #reactionVals = []
-    regexstr=re.compile(r'')
+    regexstr = re.compile(r'')
+    #messages = await channel.history(limit=1000).flatten()
+    messagenum=0
     async for message in channel.history(limit=100):
-        if message.author=scryfall:
+        if message.author.id==scryfallid:
+            continue
+        elif message.author.id!=146687253370896385:
             continue
         else:
             messageVals = parse_message(message)
+            if len(messageVals[3])>0:
+                extractedMessages.append(messageVals)
+                #print("Author Id: {}".format(messageVals[0]))
+                #print("Author Name: {}".format(client.get_user(messageVals[0])))
+                #print("Channel Id: {}".format(messageVals[1]))
+                #print("Channel Name: {}".format(client.get_channel(messageVals[1])))
+                #print("Date info: {}".format(messageVals[2]))
+                #print("Emoji ids: {}".format((messageVals[3])))
+    compileNumbers(extractedMessages)
             #reactionVals= parseReactions(message)
-def parse_message(message,regexstr):
+def parse_message(message):
     retval=[]
-    retval=retval.append(message.author.id)
-    retval=retval.append(message.channel.id)
-    custom_emojis = re.findall(r'<:\w*:\d*>', msg.content)
-    custom_emojis = [int(e.split(':')[1].replace('>', '')) for e in custom_emojis]
-    custom_emojis = [discord.utils.get(client.get_all_emojis(), id=e) for e in custom_emojis]
+    retval.append(message.author.id)
+    retval.append(message.channel.id)
+    retval.append(message.created_at)
+    custom_emojis = re.findall(r'<:\w*:\d*>', message.content)
+    print(message.content)
+    print(custom_emojis)
+    custom_emojis = [int(e.split(':')[2].replace('>', '')) for e in custom_emojis]
+    #custom_emojis = [client.get_emoji(e) for e in custom_emojis]
+    retval.append(custom_emojis)
+    return retval
+
+def compileNumbers(messages):
+    print("Compiling Data")
+    print("Length of messages: {}".format(len(messages)))
+    data=dict()
+    for message in messages:
+        for e in message[3]:
+            if str(e) in data:
+                data[str(e)]+=1
+            else:
+                data[str(e)]=1
+    print(data)
+    for e in data:
+        print(e)
+        #print(discord.utils.get(client.emojis,id=int(e)))
+        emoji = discord.utils.get(client.emojis,id=int(e))
+        print(":{}: : ".format(str(emoji),data[str(e)]))
+
+
 
 
 
