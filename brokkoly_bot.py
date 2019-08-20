@@ -7,14 +7,7 @@ import random
 import time
 import atexit
 import datetime
-#import numpy as np
-accountability = madisontokens.accountability
-TOKEN = tokens.TOKEN
-accountabilityMessages = []
-accountabilityDates = []
-#accountabilityMessages = np.empty(0,2)
-#checkReaction = discord.reaction()
-#accountabilityLoad = 0
+import numpy as np
 
 lastDRS = 0.0
 lastRL = 0.0
@@ -161,7 +154,7 @@ async def on_ready():
     print('------')
     global lastDRS
     global lastRL
-    
+    legacyServerTest()
     #lastDRS = time.time()
     #lastRL = time.time()
     #print(client.servers)
@@ -169,9 +162,9 @@ async def on_ready():
         lastDRS = time.time()
     if(lastRL == 0.0):
         lastRL = time.time()
-    accountabilityChannel = client.get_channel(accountability)
+    #accountabilityChannel = client.get_channel(accountability)
     #accountabilityLogs = yielf from client.logs_from(accountabilityChannel)
-    regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
+    #regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
 
 
 '''
@@ -209,25 +202,43 @@ def ban_drs_check(message,client):
     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
 
 def legacyServerTest():
+    data = np.empty()
     general_channel_id='329746807599136769'
     general_channel=get_channel(general_channel_id)
     scryfall = member_id("268547439714238465")
+    data=np.empty((0,0,0,0))
+    userHash= dict()
+    emojiHash= dict()
     messageVals = []
+    userIndex=0
+    emojiIndex=0
+    userNum=0
+    emojiNum=0
+    authorId=""
     #reactionVals = []
     regexstr=re.compile(r'')
-    async for message in channel.history(limit=100):
+    async for message in channel.history(limit=10):
         if message.author=scryfall:
             continue
         else:
             messageVals = parse_message(message)
             #reactionVals= parseReactions(message)
+            if(len(messageVals[3])=0):
+                continue
+            for emoji in messageVals[3]:
+                
+
+
 def parse_message(message,regexstr):
     retval=[]
     retval=retval.append(message.author.id)
     retval=retval.append(message.channel.id)
-    custom_emojis = re.findall(r'<:\w*:\d*>', msg.content)
-    custom_emojis = [int(e.split(':')[1].replace('>', '')) for e in custom_emojis]
-    custom_emojis = [discord.utils.get(client.get_all_emojis(), id=e) for e in custom_emojis]
+    retval=retval.append(message.created_at)
+    custom_emoji = re.findall(r'<:\w*:\d*>', msg.content)
+    custom_emoji = [int(e.split(':')[1].replace('>', '')) for e in custom_emoji]
+    custom_emoji = [discord.utils.get(client.get_all_emojis(), id=e) for e in custom_emoji]
+    retval=retval.append(custom_emoji)
+    return retval;
 
 
 
