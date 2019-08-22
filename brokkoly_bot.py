@@ -9,11 +9,19 @@ import atexit
 import datetime
 import numpy as np
 TOKEN = tokens.TOKEN
-
 ready = False
 client = discord.Client()
 
-
+def makeQuotes():
+    retarr=[]
+    retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.")
+    retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.")
+    retarr.append("I'd rather just cast TS and not cross my fingers to either draw the hymn nut or hit their TNN.")
+    retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.")
+    retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.")
+    retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.")
+    return retarr
+hymn_quotes=makeQuotes()
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
@@ -23,61 +31,23 @@ async def on_message(message):
     global highscoreRL
     
     #print(client.user.name)
-    #print(str(message.author))
+    print(str(message.author))
+    print(message.guild.id==329746807599136769)
 
     if message.author == client.user:
         return
-    if (message.guild.id == "225374061386006528")and(message.channel.id == "329746807599136769"):#"329746807599136769":
+    if (message.guild.id == 329746807599136769):#and(message.channel.id == "329746807599136769"):#"329746807599136769":
         ###Legacy Discord, only currently uses the drs and rL commands
-
-        # if(message.author.roles.id == "449799376387440642"):
-        #
-        #     if(message.content.startswith("!drs")):
-        #         time_since = (time.time()-lastDRS)/86400.0
-        #         lastDRS = time.time()
-        #         print(lastDRS)
-        #         msg = "DRS banning conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
-        #
-        #         if(time_since > highscoreDRS):
-        #             msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreDRS
-        #             highscoreDRS = time_since
-        #
-        #         await client.send_message(message.channel,msg)
-        #         return
-        #     if message.content.startswith("!checkdrs"):
-        #         time_since = (time.time()-lastDRS)/86400.0
-        #         msg = "Last drs conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreDRS)
-        #         await client.send_message(message.channel,msg)
-        #         return
-        #     if(message.content.startswith("!rl")):
-        #         time_since = (time.time()-lastDRS)/86400.0
-        #         lastDRS = time.time()
-        #
-        #         msg = "Reserved list conversation detected! Resetting counter. Y'all made it %.4f days without talking about it"%time_since
-        #
-        #         if(time_since > highscoreRL):
-        #             msg = msg + "\nYou set a new high score! The previous high score was %.4f days!"%highscoreRL
-        #             highscoreRL = time_since
-        #         await client.send_message(message.channel,msg)
-        #         return
-        #     if message.content.startswith("!checkrl"):
-        #         time_since = (time.time()-lastDRS)/86400.0
-        #         msg = "Last reserved list conversation occured %.4f days ago. Current highscore: %.4f days."%(time_since,highscoreRL)
-        #         return
-        #     if message.content.startswith("!help"):
-        #         msg = "!drs: mark a new deathrite banning conversation\n"
-        #         msg = msg+"!rl: mark a new reserved list conversation\n"
-        #         msg = msg+"!drscheck: check the time since and highscore for the deathrite clock"
-        #         msg = msg+"!rlcheck: check the time since and highscore for the reserved list clock"
-        #         await client.send_message(message.channel,msg)
-        #         return
 
         print(message.author.nick)
         print(message.channel.id)
         print(message.guild)
         print(message.guild.id)
 
-        return
+        if(message.content.startswith("!hymn")):
+            msg=random.choice(hymn_quotes)
+            await message.channel.send(msg)
+
     #if(not gotChannels):
     #for chan in message.server.channels:
     #    print(chan.name+" = \""+chan.id+"\"")
@@ -95,7 +65,6 @@ async def on_message(message):
         nick = message.author.nick
     
     #if message.content.startswith('!bless'):
-    '''
     if(str(message.author) == "RedCloakedCrow#3318"):
         if(random.randint(0,10000)<= 10):
             await client.add_reaction(message,"\N{EYE}")
@@ -103,7 +72,6 @@ async def on_message(message):
             await client.add_reaction(message,"\N{CLOUD WITH RAIN}")
             await client.add_reaction(message,"\N{DOWNWARDS BLACK ARROW}")
             await client.add_reaction(message,"\N{EARTH GLOBE EUROPE-AFRICA}")
-    '''
     if message.mention_everyone:
         msg = 'Don\'t do that {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
@@ -150,7 +118,7 @@ async def on_ready():
     print('------')
     global lastDRS
     global lastRL
-    
+    #legacyServerTest()
     #lastDRS = time.time()
     #lastRL = time.time()
     #print(client.servers)
@@ -159,25 +127,30 @@ async def on_ready():
     #if(lastRL == 0.0):
     #    lastRL = time.time()
     #regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
-    await legacyServerTest()
-
+    #await legacyServerTest()
 
 def ban_drs_check(message,client):
     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
 
 async def legacyServerTest():
-    general_channel_id=329746807599136769
-    channel=client.get_channel(general_channel_id)
-    scryfallid = 268547439714238465
-    extractedMessages=[]
+    data = np.empty()
+    general_channel_id='329746807599136769'
+    general_channel=client.get_channel(general_channel_id)
+    scryfall = client.member_id("268547439714238465")
+    data=np.empty((0,0,0,0))
+    userHash= dict()
+    emojiHash= dict()
+    messageVals = []
+    userIndex=0
+    emojiIndex=0
+    userNum=0
+    emojiNum=0
+    authorId=""
     #reactionVals = []
-    regexstr = re.compile(r'')
-    #messages = await channel.history(limit=1000).flatten()
-    messagenum=0
-    async for message in channel.history(limit=None):
-        if message.author.id==scryfallid:
-            continue
-        elif message.author.id!=146687253370896385:
+    extractedMessages=[]
+    regexstr=re.compile(r'')
+    async for message in general_channel.history(limit=10):
+        if message.author==scryfall:
             continue
         else:
             messageVals = parse_message(message)
@@ -191,6 +164,7 @@ async def legacyServerTest():
                 #print("Emoji ids: {}".format((messageVals[3])))
     compileNumbers(extractedMessages)
             #reactionVals= parseReactions(message)
+
 def parse_message(message):
     retval=[]
     retval.append(message.author.id)
@@ -221,9 +195,6 @@ def compileNumbers(messages):
         #print(discord.utils.get(client.emojis,id=int(e)))
         emoji = discord.utils.get(client.emojis,id=int(e))
         print(":{}: : ".format(str(emoji),data[str(e)]))
-
-
-
 
 
 def loadStuff():
