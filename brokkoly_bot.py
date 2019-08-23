@@ -20,6 +20,7 @@ def makeQuotes():
     retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.")
     retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.")
     retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.")
+    retarr.append("I'm sorry you can't afford astrolabe and have to play hymn instead of Leovold and Wrenn and Six.")
     return retarr
 hymn_quotes=makeQuotes()
 @client.event
