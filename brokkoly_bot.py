@@ -28,10 +28,10 @@ def makeQuotes():
     retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.") #kyle
     retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.") #kyle
     retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.") #kyle
-    retarr.append("My hot pro Hymn take is that if you Hymn twice it's actually impossible to lose") #alex
+    retarr.append("I'm sorry you can't afford astrolabe and have to play hymn instead of Leovold and Wrenn and Six.")
+    retarr.append("Luck is thinking Hymn makes your deck better. Varience just proves how wrong you are")
     retarr.append("Hymn blows. Feel free to @ me") #kyle
     retarr.append("Hymn isn't a threat in your glacially slow control deck. I really hope they don't recover in the 15 more turns they have.")
-    retarr.append("The trick is that they hymn you, you discard your two mentors\nnext turn untap\nplay the 3rd mentor you had in hand")
     retarr.append("Licking doorknobs is illegal on other planets.")
     return retarr
 hymn_quotes=makeQuotes()
