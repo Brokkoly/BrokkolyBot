@@ -12,16 +12,30 @@ TOKEN = tokens.TOKEN
 ready = False
 client = discord.Client()
 
+def mentorQuotes():
+    retarr=[]
+    retarr.append("It's mentor, but instead of monk tokens it makes thalias.")#brokkoly
+    retarr.append("The wombo of mentor and astrolabe will shatter moderns foundation")#richard cranium
+    retarr.append("\"mentor kills people surprisingly fast\" -Silly")
+    retarr.append("\"You might be shocked to hear this, but on a personal level I find that mentor kills people shockingly fast\" -Brokkoly")
+    retarr.append("sometimes just terminus your mentor + 3 monk tokens when they have no creatures")
+    return retarr
 def makeQuotes():
     retarr=[]
-    retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.")
-    retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.")
-    retarr.append("I'd rather just cast TS and not cross my fingers to either draw the hymn nut or hit their TNN.")
-    retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.")
-    retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.")
-    retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.")
+    retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.") #kyle
+    retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.") #kyle
+    retarr.append("I'd rather just cast TS and not cross my fingers to either draw the hymn nut or hit their TNN.") #kyle
+    retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.") #kyle
+    retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.") #kyle
+    retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.") #kyle
+    retarr.append("My hot pro Hymn take is that if you Hymn twice it's actually impossible to lose") #alex
+    retarr.append("Hymn blows. Feel free to @ me") #kyle
+    retarr.append("Hymn isn't a threat in your glacially slow control deck. I really hope they don't recover in the 15 more turns they have.")
+    retarr.append("The trick is that they hymn you, you discard your two mentors\nnext turn untap\nplay the 3rd mentor you had in hand")
+    retarr.append("Licking doorknobs is illegal on other planets.")
     return retarr
 hymn_quotes=makeQuotes()
+mentor_quotes=mentorQuotes()
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
@@ -44,10 +58,15 @@ async def on_message(message):
         print(message.guild)
         print(message.guild.id)
 
-        if(message.content.startswith("!hymn")):
-            msg=random.choice(hymn_quotes)
-            await message.channel.send(msg)
-
+    if (message.content.startswith("!hymn")):
+        msg = random.choice(hymn_quotes)
+        await message.channel.send(msg)
+    if (message.content.startswith("!mentor")):
+        msg = random.choice(mentor_quotes)
+        await message.channel.send(msg)
+    if (message.content.startswith("!auri")):
+        msg ="Ignoring exception in on_message\nTraceback (most recent call last):\nFile \"C:\ProgramData\Anaconda3\lib\site-packages\discord\client.py\", line 270, in _run_event\nawait coro(*args, **kwargs)\nFile \"C:/Users/[REDACTED]/PycharmProjects/BrokkolyBot/brokkoly_bot.py\", line 68, in on_message\nawait message.channel.send(msg)\nFile \"C:\ProgramData\Anaconda3\lib\site-packages\discord\abc.py\", line 823, in send\ndata = await state.http.send_message(channel.id, content, tts=tts, embed=embed, nonce=nonce)\nFile \"C:\ProgramData\Anaconda3\lib\site-packages\discord\http.py\", line 222, in request\nraise HTTPException(r, data)\ndiscord.errors.HTTPException: 400 BAD REQUEST (error code: 50035): Invalid Form Body\nIn content: Must be 2000 or fewer in length."
+        await message.channel.send(msg)
     #if(not gotChannels):
     #for chan in message.server.channels:
     #    print(chan.name+" = \""+chan.id+"\"")
