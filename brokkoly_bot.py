@@ -1,56 +1,16 @@
-# https://github.com/Rapptz/discord.py/blob/async/examples/reply.py
 import discord
 import re
 import tokens
 import random
-import time
-import asyncio
 import atexit
-import datetime
-import numpy as np
+from quote_arrays import *
 TOKEN = tokens.TOKEN
 ready = False
 client = discord.Client()
-
-def labeTweets():
-    retarr=[]
-    retarr.append("https://twitter.com/ArcumS/status/1263646699920281603")
-    retarr.append("https://twitter.com/ArcumS/status/1256453503364579330")
-    retarr.append("https://twitter.com/ArcumS/status/1250269199085125635")
-    retarr.append("https://twitter.com/ArcumS/status/1248425661926006784")
-    retarr.append("https://twitter.com/ArcumS/status/1246820699907543050")
-    retarr.append("https://twitter.com/ArcumS/status/1246433688142913536")
-    retarr.append("https://twitter.com/ArcumS/status/1244076223929683968")
-    retarr.append("https://twitter.com/ArcumS/status/1243165977606590468")
-    retarr.append("https://twitter.com/ArcumS/status/1241082325238153216")
-    retarr.append("https://twitter.com/ArcumS/status/1240613793580933120")
-    retarr.append("https://twitter.com/ArcumS/status/1239550045042638848")
-    return retarr
-
-
-def mentorQuotes():
-    retarr=[]
-    retarr.append("It's mentor, but instead of monk tokens it makes thalias.")#brokkoly
-    retarr.append("The wombo of mentor and astrolabe will shatter moderns foundation")#richard cranium
-    retarr.append("mentor kills people surprisingly fast")
-    return retarr
-def makeQuotes():
-    retarr=[]
-    retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.") 
-    retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.") 
-    retarr.append("I'd rather just cast TS and not cross my fingers to either draw the hymn nut or hit their TNN.") 
-    retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.") 
-    retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.") 
-    retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.") 
-    retarr.append("Luck is thinking Hymn makes your deck better. Varience just proves how wrong you are")
-    retarr.append("Hymn blows. Feel free to @ me") 
-    retarr.append("Hymn isn't a threat in your glacially slow control deck. I really hope they don't recover in the 15 more turns they have.")
-    retarr.append("Licking doorknobs is illegal on other planets.")
-    retarr.append("Hymn to Tourach: When actually having to think is too darn hard")
-    return retarr
 hymn_quotes=makeQuotes()
 mentor_quotes=mentorQuotes()
 labe_tweets=labeTweets()
+
 @client.event
 async def on_message(message):
     global lastDRS
@@ -58,7 +18,6 @@ async def on_message(message):
     global lastRL
     global highscoreRL
     
-    #print(client.user.name)
     print(str(message.author))
     print(message.guild.id==329746807599136769)
     print(message.content)
@@ -102,14 +61,14 @@ async def on_message(message):
     #if message.content.startswith('!bless'):
     if(str(message.author) == "RedCloakedCrow#3318"):
         if(random.randint(0,10000)<= 10):
-            await client.add_reaction(message,"\N{EYE}")
-            await client.add_reaction(message,"\N{PERSON WITH FOLDED HANDS}")
-            await client.add_reaction(message,"\N{CLOUD WITH RAIN}")
-            await client.add_reaction(message,"\N{DOWNWARDS BLACK ARROW}")
-            await client.add_reaction(message,"\N{EARTH GLOBE EUROPE-AFRICA}")
+            await message.add_reaction("\N{EYE}")
+            await message.add_reaction("\N{PERSON WITH FOLDED HANDS}")
+            await message.add_reaction("\N{CLOUD WITH RAIN}")
+            await message.add_reaction("\N{DOWNWARDS BLACK ARROW}")
+            await message.add_reaction("\N{EARTH GLOBE EUROPE-AFRICA}")
     if message.mention_everyone:
         msg = 'Don\'t do that {0.author.mention}'.format(message)
-        await client.send_message(message.channel, msg)
+        await message.channel.send(msg)
     '''
     if message.content.startswith('!hello'):
         msg = 'Hello {0.author.mention}'.format(message)
@@ -164,41 +123,41 @@ async def on_ready():
     #regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
     #await legacyServerTest()
 
-def ban_drs_check(message,client):
-    regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
+# def ban_drs_check(message,client):
+#     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
 
-async def legacyServerTest():
-    data = np.empty()
-    general_channel_id='329746807599136769'
-    general_channel=client.get_channel(general_channel_id)
-    scryfall = client.member_id("268547439714238465")
-    data=np.empty((0,0,0,0))
-    userHash= dict()
-    emojiHash= dict()
-    messageVals = []
-    userIndex=0
-    emojiIndex=0
-    userNum=0
-    emojiNum=0
-    authorId=""
-    #reactionVals = []
-    extractedMessages=[]
-    regexstr=re.compile(r'')
-    async for message in general_channel.history(limit=10):
-        if message.author==scryfall:
-            continue
-        else:
-            messageVals = parse_message(message)
-            if len(messageVals[3])>0:
-                extractedMessages.append(messageVals)
-                #print("Author Id: {}".format(messageVals[0]))
-                #print("Author Name: {}".format(client.get_user(messageVals[0])))
-                #print("Channel Id: {}".format(messageVals[1]))
-                #print("Channel Name: {}".format(client.get_channel(messageVals[1])))
-                #print("Date info: {}".format(messageVals[2]))
-                #print("Emoji ids: {}".format((messageVals[3])))
-    compileNumbers(extractedMessages)
-            #reactionVals= parseReactions(message)
+# async def legacyServerTest():
+#     data = np.empty()
+#     general_channel_id='329746807599136769'
+#     general_channel=client.get_channel(general_channel_id)
+#     scryfall = client.member_id("268547439714238465")
+#     data=np.empty((0,0,0,0))
+#     userHash= dict()
+#     emojiHash= dict()
+#     messageVals = []
+#     userIndex=0
+#     emojiIndex=0
+#     userNum=0
+#     emojiNum=0
+#     authorId=""
+#     #reactionVals = []
+#     extractedMessages=[]
+#     regexstr=re.compile(r'')
+#     async for message in general_channel.history(limit=10):
+#         if message.author==scryfall:
+#             continue
+#         else:
+#             messageVals = parse_message(message)
+#             if len(messageVals[3])>0:
+#                 extractedMessages.append(messageVals)
+#                 #print("Author Id: {}".format(messageVals[0]))
+#                 #print("Author Name: {}".format(client.get_user(messageVals[0])))
+#                 #print("Channel Id: {}".format(messageVals[1]))
+#                 #print("Channel Name: {}".format(client.get_channel(messageVals[1])))
+#                 #print("Date info: {}".format(messageVals[2]))
+#                 #print("Emoji ids: {}".format((messageVals[3])))
+#     compileNumbers(extractedMessages)
+#             #reactionVals= parseReactions(message)
 
 def parse_message(message):
     retval=[]
