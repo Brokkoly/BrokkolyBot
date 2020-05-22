@@ -4,8 +4,14 @@ import tokens
 import random
 import atexit
 from quote_arrays import *
-
+from boto.s3.connection import S3Connection
+import os
+#s3 = S3Connection(os.environ['TOKEN'])
+TOKEN=None
+#if not s3.access_key(['Token']):
 TOKEN = tokens.TOKEN
+#else
+#    TOKEN =s3.access_key(['Token'])
 ready = False
 client = discord.Client()
 hymn_quotes = get_hymn_quotes()
@@ -13,15 +19,15 @@ mentor_quotes = get_mentor_quotes()
 labe_tweets = get_labe_tweets()
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
+lastDRS = None
+highScoreDRS = None
+lastRL = None
+highScoreRL = None
+random.seed()
 
 
 @client.event
 async def on_message(message):
-    global lastDRS
-    global highscoreDRS
-    global lastRL
-    global highscoreRL
-
     # print(str(message.author))
     # print(message.guild.id==329746807599136769)
     # print(message.content)
@@ -29,21 +35,20 @@ async def on_message(message):
     # Don't reply to our own messages
     if message.author == client.user:
         return
-    if (
-            message.guild.id == 329746807599136769):  # and(message.channel.id == "329746807599136769"):#"329746807599136769":
+    if message.guild.id == 329746807599136769:
 
         print(message.author.nick)
         print(message.channel.id)
         print(message.guild)
         print(message.guild.id)
 
-    if (message.content.startswith("!hymn")):
+    if message.content.startswith("!hymn"):
         msg = random.choice(hymn_quotes)
         await message.channel.send(msg)
-    if (message.content.startswith("!mentor")):
+    if message.content.startswith("!mentor"):
         msg = random.choice(mentor_quotes)
         await message.channel.send(msg)
-    if (message.content.startswith("!labe") or message.content.startswith("!astrolabe")):
+    if message.content.startswith("!labe") or message.content.startswith("!astrolabe"):
         msg = random.choice(labe_tweets)
         await message.channel.send(msg)
     """
@@ -56,16 +61,7 @@ async def on_message(message):
         return
     print(type(message.author.nick))
     """
-    if (str(message.author.nick) == "None"):
-        # no nickname
-        nick = message.author.name
-    else:
-        # has nickname
-        # print("has Nickname")
-        nick = message.author.nick
-
-    # if message.content.startswith('!bless'):
-    if (str(message.author) == "RedCloakedCrow#3318"):
+    if str(message.author == "RedCloakedCrow#3318"):
         if (random.randint(0, 10000) <= 10):
             await message.add_reaction("\N{EYE}")
             await message.add_reaction("\N{PERSON WITH FOLDED HANDS}")
@@ -79,34 +75,6 @@ async def on_message(message):
     if message.content.startswith('!hello'):
         msg = 'Hello {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
-    '''
-    '''
-    if message.content.startswith('!clap'):
-        msg = "%s: "%message.author.nick
-        msg = msg + message.content[6:].replace(" "," :clap: ")+" :clap:"
-        #msg = msg.replace(" "," :clap: ")
-        #msg = msg + " :clap:"
-        msg = msg.format(message)
-        await client.send_message(message.channel, msg)
-    '''
-    '''
-    if message.content.startswith('!clap'):
-        msg = "%s: "%nick
-        msg = msg + message.content[6:].replace(" "," :clap: ")+" :clap:"
-        #id = message.id
-
-        #msg = msg.replace(" "," :clap: ")
-        #msg = msg + " :clap:"
-        msg = msg.format(message)
-
-        await client.send_message(message.channel, msg)
-        try:
-            await client.delete_message(message)
-        except discord.Forbidden:
-            print("Don't have permissions")
-        except discord.HTTPException:
-            print("Other Error")
-    #if message.content.startswith('!help')
     '''
 
 
@@ -231,5 +199,4 @@ def saveStuff():
 
 atexit.register(saveStuff)
 loadStuff()
-random.seed()
 client.run(TOKEN)
