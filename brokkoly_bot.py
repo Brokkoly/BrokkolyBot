@@ -7,9 +7,9 @@ from quote_arrays import *
 TOKEN = tokens.TOKEN
 ready = False
 client = discord.Client()
-hymn_quotes=makeQuotes()
-mentor_quotes=mentorQuotes()
-labe_tweets=labeTweets()
+hymn_quotes=get_hymn_quotes()
+mentor_quotes=get_mentor_quotes()
+labe_tweets=get_labe_tweets()
 
 @client.event
 async def on_message(message):

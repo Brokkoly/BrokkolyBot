@@ -1,5 +1,6 @@
 
-def labeTweets():
+def get_labe_tweets():
+    """Return the tweets for referencing Arcum's Astrolabe"""
     retarr=[]
     retarr.append("https://twitter.com/ArcumS/status/1263646699920281603")
     retarr.append("https://twitter.com/ArcumS/status/1256453503364579330")
@@ -15,13 +16,17 @@ def labeTweets():
     return retarr
 
 
-def mentorQuotes():
+def get_mentor_quotes():
+    """Return the quotes for referencing Monastery Mentor"""
     retarr=[]
     retarr.append("It's mentor, but instead of monk tokens it makes thalias.")#brokkoly
     retarr.append("The wombo of mentor and astrolabe will shatter moderns foundation")#richard cranium
     retarr.append("mentor kills people surprisingly fast")
     return retarr
-def makeQuotes():
+
+
+def get_hymn_quotes():
+    """Return the quotes for referencing Hymn to Tourach"""
     retarr=[]
     retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.")
     retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.")
