@@ -12,13 +12,29 @@ TOKEN = tokens.TOKEN
 ready = False
 client = discord.Client()
 
+def labeTweets():
+    retarr=[]
+    retarr.append("https://twitter.com/ArcumS/status/1263646699920281603")
+    retarr.append("https://twitter.com/ArcumS/status/1256453503364579330")
+    retarr.append("https://twitter.com/ArcumS/status/1250269199085125635")
+    retarr.append("https://twitter.com/ArcumS/status/1248425661926006784")
+    retarr.append("https://twitter.com/ArcumS/status/1246820699907543050")
+    retarr.append("https://twitter.com/ArcumS/status/1246433688142913536")
+    retarr.append("https://twitter.com/ArcumS/status/1244076223929683968")
+    retarr.append("https://twitter.com/ArcumS/status/1243165977606590468")
+    retarr.append("https://twitter.com/ArcumS/status/1241082325238153216")
+    retarr.append("https://twitter.com/ArcumS/status/1240613793580933120")
+    retarr.append("https://twitter.com/ArcumS/status/1239550045042638848")
+    return retarr
+
+
 def mentorQuotes():
     retarr=[]
     retarr.append("It's mentor, but instead of monk tokens it makes thalias.")#brokkoly
     retarr.append("The wombo of mentor and astrolabe will shatter moderns foundation")#richard cranium
-    retarr.append("\"mentor kills people surprisingly fast\" -Silly")
-    retarr.append("\"You might be shocked to hear this, but on a personal level I find that mentor kills people shockingly fast\" -Brokkoly")
-    retarr.append("sometimes just terminus your mentor + 3 monk tokens when they have no creatures")
+    retarr.append("mentor kills people surprisingly fast")
+    #retarr.append("\"You might be shocked to hear this, but on a personal level I find that mentor kills people shockingly fast\" -Brokkoly")
+    #retarr.append("sometimes just terminus your mentor + 3 monk tokens when they have no creatures")
     return retarr
 def makeQuotes():
     retarr=[]
@@ -28,14 +44,18 @@ def makeQuotes():
     retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.") #kyle
     retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.") #kyle
     retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.") #kyle
-    retarr.append("I'm sorry you can't afford astrolabe and have to play hymn instead of Leovold and Wrenn and Six.")
+    #retarr.append("I'm sorry you can't afford astrolabe and have to play hymn instead of Leovold and Wrenn and Six.")
     retarr.append("Luck is thinking Hymn makes your deck better. Varience just proves how wrong you are")
     retarr.append("Hymn blows. Feel free to @ me") #kyle
     retarr.append("Hymn isn't a threat in your glacially slow control deck. I really hope they don't recover in the 15 more turns they have.")
     retarr.append("Licking doorknobs is illegal on other planets.")
+    retarr.append("Hymn to Tourach: When actually having to think is too darn hard")
+    #retarr.append("It was his hymn, Mr Krabs. He was number one!")
+    #retarr.append("Dental Plan!\nLisa needs hymns!")
     return retarr
 hymn_quotes=makeQuotes()
 mentor_quotes=mentorQuotes()
+labe_tweets=labeTweets()
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
@@ -47,6 +67,7 @@ async def on_message(message):
     #print(client.user.name)
     print(str(message.author))
     print(message.guild.id==329746807599136769)
+    print(message.content)
 
     if message.author == client.user:
         return
@@ -64,8 +85,8 @@ async def on_message(message):
     if (message.content.startswith("!mentor")):
         msg = random.choice(mentor_quotes)
         await message.channel.send(msg)
-    if (message.content.startswith("!auri")):
-        msg ="Ignoring exception in on_message\nTraceback (most recent call last):\nFile \"C:\ProgramData\Anaconda3\lib\site-packages\discord\client.py\", line 270, in _run_event\nawait coro(*args, **kwargs)\nFile \"C:/Users/[REDACTED]/PycharmProjects/BrokkolyBot/brokkoly_bot.py\", line 68, in on_message\nawait message.channel.send(msg)\nFile \"C:\ProgramData\Anaconda3\lib\site-packages\discord\abc.py\", line 823, in send\ndata = await state.http.send_message(channel.id, content, tts=tts, embed=embed, nonce=nonce)\nFile \"C:\ProgramData\Anaconda3\lib\site-packages\discord\http.py\", line 222, in request\nraise HTTPException(r, data)\ndiscord.errors.HTTPException: 400 BAD REQUEST (error code: 50035): Invalid Form Body\nIn content: Must be 2000 or fewer in length."
+    if(message.content.startswith("!labe") or message.content.startswith("!astrolabe")):
+        msg=random.choice(labe_tweets)
         await message.channel.send(msg)
     #if(not gotChannels):
     #for chan in message.server.channels:
@@ -243,6 +264,7 @@ def saveStuff():
     wfile.write(str(highscoreDRS)+"\n")
     wfile.write(str(highscoreRL)+"\n")
     wfile.close()
+
 atexit.register(saveStuff)
 loadStuff()
 client.run(TOKEN)
