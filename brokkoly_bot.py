@@ -33,32 +33,26 @@ def mentorQuotes():
     retarr.append("It's mentor, but instead of monk tokens it makes thalias.")#brokkoly
     retarr.append("The wombo of mentor and astrolabe will shatter moderns foundation")#richard cranium
     retarr.append("mentor kills people surprisingly fast")
-    #retarr.append("\"You might be shocked to hear this, but on a personal level I find that mentor kills people shockingly fast\" -Brokkoly")
-    #retarr.append("sometimes just terminus your mentor + 3 monk tokens when they have no creatures")
     return retarr
 def makeQuotes():
     retarr=[]
-    retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.") #kyle
-    retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.") #kyle
-    retarr.append("I'd rather just cast TS and not cross my fingers to either draw the hymn nut or hit their TNN.") #kyle
-    retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.") #kyle
-    retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.") #kyle
-    retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.") #kyle
-    #retarr.append("I'm sorry you can't afford astrolabe and have to play hymn instead of Leovold and Wrenn and Six.")
+    retarr.append("Every time I watch a grixis player cast hymn and die to combo the following turn I have an unreasonable amount of joy.") 
+    retarr.append("You incorrectly decided Liliana of the Veil and Hymn are good magic cards.") 
+    retarr.append("I'd rather just cast TS and not cross my fingers to either draw the hymn nut or hit their TNN.") 
+    retarr.append("Legacy has shifted in a direction where specific cards matter much more than raw quantity. Most of the fair decks have only 4-6 cards that actually matter, so hymn sucks.") 
+    retarr.append("People cast hymn on turn 2 against combo because they enjoy losing.") 
+    retarr.append("If you sleeve up your first hymn before your third thoughtseize you're just trying to have an early dinner.") 
     retarr.append("Luck is thinking Hymn makes your deck better. Varience just proves how wrong you are")
-    retarr.append("Hymn blows. Feel free to @ me") #kyle
+    retarr.append("Hymn blows. Feel free to @ me") 
     retarr.append("Hymn isn't a threat in your glacially slow control deck. I really hope they don't recover in the 15 more turns they have.")
     retarr.append("Licking doorknobs is illegal on other planets.")
     retarr.append("Hymn to Tourach: When actually having to think is too darn hard")
-    #retarr.append("It was his hymn, Mr Krabs. He was number one!")
-    #retarr.append("Dental Plan!\nLisa needs hymns!")
     return retarr
 hymn_quotes=makeQuotes()
 mentor_quotes=mentorQuotes()
 labe_tweets=labeTweets()
 @client.event
 async def on_message(message):
-    # we do not want the bot to reply to itself
     global lastDRS
     global highscoreDRS
     global lastRL
@@ -69,6 +63,7 @@ async def on_message(message):
     print(message.guild.id==329746807599136769)
     print(message.content)
 
+    #Don't reply to our own messages
     if message.author == client.user:
         return
     if (message.guild.id == 329746807599136769):#and(message.channel.id == "329746807599136769"):#"329746807599136769":
