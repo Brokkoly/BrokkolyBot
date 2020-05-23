@@ -1,16 +1,25 @@
-import discord
-import re
-import tokens
-import random
+# TODO Get ~~and validate~~ input for new commands
+# TODO Turn strings into a data file instead of a function
+# TODO Time out users who abuse the bot
+# TODO Properly figure out if we're on heroku or running locally
+# TODO In chat maintenance of the string library
+# TODO Figure out performance of stripping command from string before doing manipulation when adding
+# TODO Make a channel where adding is allowed instead of a server.
+# TODO Internationalize? No, that costs money
 import atexit
+import random
+import re
+
+import discord
+
+import tokens
 from quote_arrays import *
-from boto.s3.connection import S3Connection
-import os
-#s3 = S3Connection(os.environ['TOKEN'])
-TOKEN=None
-#if not s3.access_key(['Token']):
+
+# s3 = S3Connection(os.environ['TOKEN'])
+TOKEN = None
+# if not s3.access_key(['Token']):
 TOKEN = tokens.TOKEN
-#else
+# else
 #    TOKEN =s3.access_key(['Token'])
 ready = False
 client = discord.Client()
@@ -19,10 +28,13 @@ mentor_quotes = get_mentor_quotes()
 labe_tweets = get_labe_tweets()
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
+game_jazz_id = 639124326385188864
 lastDRS = None
 highScoreDRS = None
 lastRL = None
 highScoreRL = None
+after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the
+after_add_compiled_regex = re.compile(after_add_regex_string)
 random.seed()
 
 
@@ -35,12 +47,25 @@ async def on_message(message):
     # Don't reply to our own messages
     if message.author == client.user:
         return
-    if message.guild.id == 329746807599136769:
+    # if message.guild.id == 329746807599136769:
+    # print(message.author.nick)
+    # print(message.channel.id)
+    # print(message.guild)
+    # print(message.guild.id)
+    if message.guild.id == brokkolys_bot_testing_zone_id:
+        if (message.content.startswith("!add ")):
+            string_to_parse = message.content[5:]  # Cut off the add since we've already matched
+            if re.fullmatch(after_add_compiled_regex, string_to_parse):
+                first_space = string_to_parse.find(" ")
+                command = string_to_parse[:first_space]
+                message = string_to_parse[first_space:]
 
-        print(message.author.nick)
-        print(message.channel.id)
-        print(message.guild)
-        print(message.guild.id)
+                # TODO add to file or add to approval queue
+                return
+            else:
+                message.channel.send("Error! Expected \"!add !<command> <message>\"")
+                # TODO add error message
+                return
 
     if message.content.startswith("!hymn"):
         msg = random.choice(hymn_quotes)
@@ -51,6 +76,13 @@ async def on_message(message):
     if message.content.startswith("!labe") or message.content.startswith("!astrolabe"):
         msg = random.choice(labe_tweets)
         await message.channel.send(msg)
+    if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
+        """If you're reading this go listen to game jazz, it's a good podcast"""
+        # TODO load random game type
+        # TODO load random game modifier
+        # TODO send great game idea
+        # TODO syntax and proper detection of plurals
+        return
     """
     if(not gotChannels):
     for chan in message.server.channels:
@@ -86,53 +118,7 @@ async def on_ready():
     print('------')
     global lastDRS
     global lastRL
-    # legacyServerTest()
-    # lastDRS = time.time()
-    # lastRL = time.time()
-    # print(client.servers)
-    # if(lastDRS == 0.0):
-    #    lastDRS = time.time()
-    # if(lastRL == 0.0):
-    #    lastRL = time.time()
-    # regexp = re.compile(r'[0-9](|[0-9])/[0-9](|[0-9])/[0-9][0-9](|[0-9][0-9])')
-    # await legacyServerTest()
 
-
-# def ban_drs_check(message,client):
-#     regexp = re.compile(r'[bB][aA][nN] (([dD][rR][sS])|[dD]eathrite [sS]haman)')
-
-# async def legacyServerTest():
-#     data = np.empty()
-#     general_channel_id='329746807599136769'
-#     general_channel=client.get_channel(general_channel_id)
-#     scryfall = client.member_id("268547439714238465")
-#     data=np.empty((0,0,0,0))
-#     userHash= dict()
-#     emojiHash= dict()
-#     messageVals = []
-#     userIndex=0
-#     emojiIndex=0
-#     userNum=0
-#     emojiNum=0
-#     authorId=""
-#     #reactionVals = []
-#     extractedMessages=[]
-#     regexstr=re.compile(r'')
-#     async for message in general_channel.history(limit=10):
-#         if message.author==scryfall:
-#             continue
-#         else:
-#             messageVals = parse_message(message)
-#             if len(messageVals[3])>0:
-#                 extractedMessages.append(messageVals)
-#                 #print("Author Id: {}".format(messageVals[0]))
-#                 #print("Author Name: {}".format(client.get_user(messageVals[0])))
-#                 #print("Channel Id: {}".format(messageVals[1]))
-#                 #print("Channel Name: {}".format(client.get_channel(messageVals[1])))
-#                 #print("Date info: {}".format(messageVals[2]))
-#                 #print("Emoji ids: {}".format((messageVals[3])))
-#     compileNumbers(extractedMessages)
-#             #reactionVals= parseReactions(message)
 
 def parse_message(message):
     retval = []
