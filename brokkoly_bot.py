@@ -1,5 +1,4 @@
 # TODO Get ~~and validate~~ input for new commands
-# TODO Turn strings into a data file instead of a function
 # TODO Time out users who abuse the bot
 # TODO Properly figure out if we're on heroku or running locally
 # TODO In chat maintenance of the string library
@@ -13,7 +12,6 @@ import re
 import discord
 
 import tokens
-from quote_arrays import *
 
 # s3 = S3Connection(os.environ['TOKEN'])
 TOKEN = None
@@ -23,11 +21,6 @@ TOKEN = tokens.TOKEN
 #    TOKEN =s3.access_key(['Token'])
 ready = False
 client = discord.Client()
-hymn_quotes = get_hymn_quotes()
-mentor_quotes = get_mentor_quotes()
-labe_tweets = get_labe_tweets()
-rl_quotes = get_rl_quotes()
-ban_quotes = get_ban_quotes()
 
 
 def add_to_map(command_map, command, message):
@@ -82,7 +75,7 @@ random.seed()
 async def on_message(message):
     global brokkoly_favicon
     is_timed_out = True
-    #old_timeout_time = last_message_time[message.guild.id]
+    # old_timeout_time = last_message_time[message.guild.id]
     if not message.guild.id == brokkolys_bot_testing_zone_id:
         return
 
@@ -111,8 +104,8 @@ async def on_message(message):
                 continue
             response = response + "\n" + key
         await message.channel.send(response)
-        #todo should we allow people to use !help and not have it affect the time
-        #last_message_time[message.guild.id]=old_timeout_time
+        # todo should we allow people to use !help and not have it affect the time
+        # last_message_time[message.guild.id]=old_timeout_time
 
     if (message.content.startswith("!add ")):
         if (message.author.id in author_whitelist):
@@ -137,8 +130,6 @@ async def on_message(message):
                 return
         else:
             reject_message(message, "Error! Insufficient privileges to add.", is_timed_out)
-
-
 
     command = message.content
     if command in command_map:
