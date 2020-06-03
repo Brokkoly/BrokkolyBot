@@ -39,9 +39,7 @@ def add_to_map(command_map, command, message):
 
 def get_all_quotes():
     read_file = open("botdb.txt", "r")
-    messages = []
     command_map = {}
-    cur_index = 0
     lines = read_file.readlines()
     for line in lines:
         first_space = line.find(" ")
@@ -53,6 +51,7 @@ def get_all_quotes():
     return command_map
 
 
+brokkoly_favicon = None
 command_map = get_all_quotes()
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
@@ -71,54 +70,75 @@ lastRL = None
 highScoreRL = None
 after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the
 after_add_compiled_regex = re.compile(after_add_regex_string)
+timeout = {
+    mtg_legacy_discord_id: 30,
+    brokkolys_bot_testing_zone_id: 5
+}
+last_message_time = {}
 random.seed()
 
 
 @client.event
 async def on_message(message):
-    # print(str(message.author))
-    # print(message.guild.id==329746807599136769)
-    # print(message.content)
+    global brokkoly_favicon
+    is_timed_out = True
+    #old_timeout_time = last_message_time[message.guild.id]
+    if not message.guild.id == brokkolys_bot_testing_zone_id:
+        return
 
     # Don't reply to our own messages
     if message.author == client.user:
         return
-    # if message.guild.id == 329746807599136769:
-    # print(message.author.nick)
-    # print(message.channel.id)
-    # print(message.guild)
-    # print(message.guild.id)
-    # if message.guild.id == brokkolys_bot_testing_zone_id:
     if not message.content.startswith("!"):
         return
+
+    if message.guild.id in last_message_time and message.guild.id in timeout and \
+            not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[message.guild.id]:
+        return
+    else:
+        is_timed_out = False
+        last_message_time[message.guild.id] = message.created_at
 
     if message.content.startswith("!help"):
         response = "Available Commands:\n" \
                    "!help - You obviously know this\n" \
                    "!add - Add a new command. Syntax: !add !<command> <message>\n" \
                    "!otherservers - Display the link to the other servers spreadsheet.\n" \
+                   "See my code: https://github.com/Brokkoly/BrokkolyBot\n" \
                    "Plus comments about the following subjects:"
         for key in command_map:
             if key == "!otherservers":
                 continue
             response = response + "\n" + key
         await message.channel.send(response)
+        #todo should we allow people to use !help and not have it affect the time
+        #last_message_time[message.guild.id]=old_timeout_time
 
     if (message.content.startswith("!add ")):
         if (message.author.id in author_whitelist):
+            if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
+                reject_message(message, "Error! No mentions allowed")
+                return
             result = parse_add(message.content)
             if result[0]:
+                if (len(result[1]) > 21):
+                    reject_message(message, "Error! Command cannot be longer than 20 characters.", is_timed_out)
+                    return
+                if len(result[2]) > 500:
+                    reject_message(message, "Error! Message cannot be longer than 500 characters.", is_timed_out)
+                    return
+                result[1] = result[1].lower()
                 add_to_file(result[1], result[2])
                 add_to_map(command_map, result[1], result[2])
-                await message.add_reaction('717556579595190383')
-
-                # TODO add to file or add to approval queue
+                await message.add_reaction(client.get_emoji(445805262880899075))
                 return
             else:
-                await message.channel.send("Error! Expected \"!add !<command> <message>\"")
+                reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\"", is_timed_out)
                 return
         else:
-            await message.channel.send("Error! Insufficient privileges to add.")
+            reject_message(message, "Error! Insufficient privileges to add.", is_timed_out)
+
+
 
     command = message.content
     if command in command_map:
@@ -126,26 +146,6 @@ async def on_message(message):
         await message.channel.send(msg)
 
     '''
-    if message.content.startswith("!hymn"):
-        msg = random.choice(hymn_quotes)
-        await message.channel.send(msg)
-        return
-    if message.content.startswith("!mentor"):
-        msg = random.choice(mentor_quotes)
-        await message.channel.send(msg)
-        return
-    if message.content.startswith("!labe") or message.content.startswith("!astrolabe"):
-        msg = random.choice(labe_tweets)
-        await message.channel.send(msg)
-        return
-    if message.content.startswith("!rl"):
-        msg = random.choice(rl_quotes)
-        await message.channel.send(msg)
-        return
-    if message.content.startswith("!ban"):
-        msg = random.choice(ban_quotes)
-        await message.channel.send(msg)
-        return
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
         """If you're reading this go listen to game jazz, it's a good podcast"""
         # TODO load random game type
@@ -153,33 +153,6 @@ async def on_message(message):
         # TODO send great game idea
         # TODO syntax and proper detection of plurals
         return
-    '''
-    """
-    if(not gotChannels):
-    for chan in message.server.channels:
-        print(chan.name+" = \""+chan.id+"\"")
-        gotChannels = 1
-    print(str(message.author))
-    if message.author is "Brokkoly#0001":
-        return
-    print(type(message.author.nick))
-    """
-    """
-    if str(message.author) == "RedCloakedCrow#3318":
-        if (random.randint(0, 10000) <= 10):
-            await message.add_reaction("\N{EYE}")
-            await message.add_reaction("\N{PERSON WITH FOLDED HANDS}")
-            await message.add_reaction("\N{CLOUD WITH RAIN}")
-            await message.add_reaction("\N{DOWNWARDS BLACK ARROW}")
-            await message.add_reaction("\N{EARTH GLOBE EUROPE-AFRICA}")
-    if message.mention_everyone:
-        msg = 'Don\'t do that {0.author.mention}'.format(message)
-        await message.channel.send(msg)
-    """
-    '''
-    if message.content.startswith('!hello'):
-        msg = 'Hello {0.author.mention}'.format(message)
-        await client.send_message(message.channel, msg)
     '''
 
 
@@ -191,6 +164,12 @@ async def on_ready():
     print('------')
     global lastDRS
     global lastRL
+
+
+async def reject_message(message, error, is_timed_out):
+    await message.add_reaction("❌")
+    if not is_timed_out:
+        await message.channel.send(error)
 
 
 def parse_add(content):

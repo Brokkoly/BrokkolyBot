@@ -12,6 +12,8 @@ def get_labe_tweets():
     retarr.append("https://twitter.com/ArcumS/status/1241082325238153216")
     retarr.append("https://twitter.com/ArcumS/status/1240613793580933120")
     retarr.append("https://twitter.com/ArcumS/status/1239550045042638848")
+    retarr.append("https://twitter.com/ArcumS/status/1263942748853407744")
+    retarr.append("https://twitter.com/ArcumS/status/1263646699920281603")
     return retarr
 
 
@@ -43,3 +45,15 @@ def get_hymn_quotes():
     retarr.append("Licking doorknobs is illegal on other planets.")
     retarr.append("Hymn to Tourach: When actually having to think is too darn hard")
     return retarr
+
+
+def get_rl_quotes():
+    retarr=[]
+    retarr.append("We want a wide variety of formats in order to let players customize their experience to their playstyle and budget.")
+    return retarr
+
+def get_ban_quotes():
+    retarr=[]
+    retarr.append("Cards don't get banned for how jank uses them, they get banned for how delver uses them.")
+    return retarr
+#TODO: Add RL Quotes
