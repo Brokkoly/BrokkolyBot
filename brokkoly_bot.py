@@ -76,9 +76,6 @@ async def on_message(message):
     global brokkoly_favicon
     is_timed_out = True
     # old_timeout_time = last_message_time[message.guild.id]
-    if not message.guild.id == brokkolys_bot_testing_zone_id:
-        return
-
     # Don't reply to our own messages
     if message.author == client.user:
         return
@@ -135,7 +132,7 @@ async def on_message(message):
                 await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
                 return
         else:
-            await reject_message(message, "Error! Insufficient privileges to add.")
+            await reject_message(message, "Error! Insufficient privileges to add.",False)
 
     if message.guild.id in last_message_time and message.guild.id in timeout and \
             not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[message.guild.id]:
@@ -170,9 +167,10 @@ async def on_ready():
     print('------')
 
 
-async def reject_message(message, error):
+async def reject_message(message, error, show_message=True):
     await message.add_reaction("❌")
-    await message.channel.send(error)
+    if show_message:
+        await message.channel.send(error)
 
 
 def parse_add(content):

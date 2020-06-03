@@ -42,3 +42,5 @@
 !todo don't die if an emoji is in a message
 !brokkoly testing in prod
 !mod bow to us
+!todo bot seems to be excepting when reactions are added to messages. doesn't cause crashing though
+!todo separate the commands by server. give yourself the ability to add commands to the master list
