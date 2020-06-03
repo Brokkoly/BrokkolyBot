@@ -61,10 +61,10 @@ lastDRS = None
 highScoreDRS = None
 lastRL = None
 highScoreRL = None
-after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the
+after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
 after_add_compiled_regex = re.compile(after_add_regex_string)
 timeout = {
-    mtg_legacy_discord_id: 30,
+    mtg_legacy_discord_id: 60,
     brokkolys_bot_testing_zone_id: 5
 }
 last_message_time = {}
@@ -84,13 +84,12 @@ async def on_message(message):
         return
     if not message.content.startswith("!"):
         return
-
-    if message.guild.id in last_message_time and message.guild.id in timeout and \
-            not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[message.guild.id]:
-        return
-    else:
-        is_timed_out = False
-        last_message_time[message.guild.id] = message.created_at
+    if message.content.startswith("!estop") and message.author.id in author_whitelist:
+        brokkoly = client.get_user(146687253370896385)
+        brokkoly_dm = await brokkoly.create_dm()
+        await brokkoly_dm.send("Emergency Stop Called. Send Help.")
+        await message.channel.send("<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
+        quit()
 
     if message.content.startswith("!help"):
         response = "Available Commands:\n" \
@@ -103,38 +102,54 @@ async def on_message(message):
             if key == "!otherservers":
                 continue
             response = response + "\n" + key
-        await message.channel.send(response)
+        user_dm_channel = await message.author.create_dm()
+        await user_dm_channel.send(response)
+        await message.add_reaction("📧")
+
+        return
         # todo should we allow people to use !help and not have it affect the time
         # last_message_time[message.guild.id]=old_timeout_time
 
     if (message.content.startswith("!add ")):
         if (message.author.id in author_whitelist):
             if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
-                reject_message(message, "Error! No mentions allowed")
+                await reject_message(message, "Error! No mentions allowed.")
                 return
             result = parse_add(message.content)
             if result[0]:
                 if (len(result[1]) > 21):
-                    reject_message(message, "Error! Command cannot be longer than 20 characters.", is_timed_out)
+                    await reject_message(message, "Error! Command cannot be longer than 20 characters.")
                     return
                 if len(result[2]) > 500:
-                    reject_message(message, "Error! Message cannot be longer than 500 characters.", is_timed_out)
+                    await reject_message(message, "Error! Message cannot be longer than 500 characters.")
                     return
+                if result[1]=="!help" or result[1] == "!add" or result[1] == "!estop" or result[1] == "!otherservers":
+                    await reject_message(message, "Error! That is a protected command")
+                    #todo make this into its own list
                 result[1] = result[1].lower()
                 add_to_file(result[1], result[2])
                 add_to_map(command_map, result[1], result[2])
                 await message.add_reaction(client.get_emoji(445805262880899075))
                 return
             else:
-                reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\"", is_timed_out)
+                await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
                 return
         else:
-            reject_message(message, "Error! Insufficient privileges to add.", is_timed_out)
+            await reject_message(message, "Error! Insufficient privileges to add.")
 
-    command = message.content
+    if message.guild.id in last_message_time and message.guild.id in timeout and \
+            not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[message.guild.id]:
+        return
+    else:
+        is_timed_out = False
+        last_message_time[message.guild.id] = message.created_at
+
+    command = message.content.lower()
     if command in command_map:
         msg = random.choice(command_map[command])
         await message.channel.send(msg)
+    else:
+        await reject_message(message, "Error! Command Not Found.")
 
     '''
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
@@ -153,14 +168,11 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
-    global lastDRS
-    global lastRL
 
 
-async def reject_message(message, error, is_timed_out):
+async def reject_message(message, error):
     await message.add_reaction("❌")
-    if not is_timed_out:
-        await message.channel.send(error)
+    await message.channel.send(error)
 
 
 def parse_add(content):
@@ -215,36 +227,5 @@ def compileNumbers(messages):
         print(":{}: : ".format(str(emoji), data[str(e)]))
 
 
-def loadStuff():
-    global lastDRS
-    global lastRL
-    global highscoreDRS
-    global highscoreRL
-    rfile = open("botstuff.txt", "r")
-    lastDRS = float(rfile.readline())
-    print("lastdrs: %f" % lastDRS)
-    lastRL = float(rfile.readline())
-    print("lastRL: %f" % lastRL)
-    highscoreDRS = float(rfile.readline())
-    print("highscoredrs: %f" % highscoreDRS)
-    highscoreRL = float(rfile.readline())
-    print("highscoreRL: %f" % highscoreRL)
-    rfile.close()
-
-
-def saveStuff():
-    global lastDRS
-    global lastRL
-    global highscoreDRS
-    global highscoreRL
-    wfile = open("botstuff.txt", "w+")
-    wfile.write(str(lastDRS) + "\n")
-    wfile.write(str(lastRL) + "\n")
-    wfile.write(str(highscoreDRS) + "\n")
-    wfile.write(str(highscoreRL) + "\n")
-    wfile.close()
-
-
-atexit.register(saveStuff)
-loadStuff()
+# atexit.register(saveStuff)
 client.run(TOKEN)
