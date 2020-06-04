@@ -85,7 +85,7 @@ async def on_message(message):
         brokkoly = client.get_user(146687253370896385)
         brokkoly_dm = await brokkoly.create_dm()
         await brokkoly_dm.send("Emergency Stop Called. Send Help.")
-        await message.channel.send("<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
+        await message.channel.send("@brokkoly#0001 Emergency Stop Called. Send Help.\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
         quit()
 
     if message.content.startswith("!help"):
@@ -102,7 +102,6 @@ async def on_message(message):
         user_dm_channel = await message.author.create_dm()
         await user_dm_channel.send(response)
         await message.add_reaction("📧")
-
         return
         # todo should we allow people to use !help and not have it affect the time
         # last_message_time[message.guild.id]=old_timeout_time
@@ -145,8 +144,6 @@ async def on_message(message):
     if command in command_map:
         msg = random.choice(command_map[command])
         await message.channel.send(msg)
-    else:
-        await reject_message(message, "Error! Command Not Found.")
 
     '''
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):

@@ -44,3 +44,5 @@
 !mod bow to us
 !todo bot seems to be excepting when reactions are added to messages. doesn't cause crashing though
 !todo separate the commands by server. give yourself the ability to add commands to the master list
+!compost https://twitter.com/Foone/status/1012789232555864064
+!labe https://twitter.com/ArcumS/status/1267118976393494528
