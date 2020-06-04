@@ -5,20 +5,22 @@
 # TODO Figure out performance of stripping command from string before doing manipulation when adding
 # TODO Make a channel where adding is allowed instead of a server.
 # TODO Internationalize? No, that costs money
-import atexit
 import random
 import re
-
 import discord
+import importlib
+from importlib import util
+import os
 
-import tokens
-
-# s3 = S3Connection(os.environ['TOKEN'])
 TOKEN = None
-# if not s3.access_key(['Token']):
-TOKEN = tokens.TOKEN
-# else
-#    TOKEN =s3.access_key(['Token'])
+token_spec = util.find_spec('tokens')
+if token_spec is not None:
+    import tokens
+
+    TOKEN = tokens.TOKEN
+else:
+    TOKEN = os.environ['TOKEN']
+
 ready = False
 client = discord.Client()
 
@@ -85,7 +87,8 @@ async def on_message(message):
         brokkoly = client.get_user(146687253370896385)
         brokkoly_dm = await brokkoly.create_dm()
         await brokkoly_dm.send("Emergency Stop Called. Send Help.")
-        await message.channel.send("@brokkoly#0001 Emergency Stop Called. Send Help.\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
+        await message.channel.send(
+            "@brokkoly#0001 Emergency Stop Called. Send Help.\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
         quit()
 
     if message.content.startswith("!help"):
@@ -119,9 +122,9 @@ async def on_message(message):
                 if len(result[2]) > 500:
                     await reject_message(message, "Error! Message cannot be longer than 500 characters.")
                     return
-                if result[1]=="!help" or result[1] == "!add" or result[1] == "!estop" or result[1] == "!otherservers":
+                if result[1] == "!help" or result[1] == "!add" or result[1] == "!estop" or result[1] == "!otherservers":
                     await reject_message(message, "Error! That is a protected command")
-                    #todo make this into its own list
+                    # todo make this into its own list
                 result[1] = result[1].lower()
                 add_to_file(result[1], result[2])
                 add_to_map(command_map, result[1], result[2])
@@ -131,9 +134,7 @@ async def on_message(message):
                 await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
                 return
         else:
-            await reject_message(message, "Error! Insufficient privileges to add.",False)
-
-
+            await reject_message(message, "Error! Insufficient privileges to add.", False)
 
     command = message.content.lower()
     if command in command_map:
