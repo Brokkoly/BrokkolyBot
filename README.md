@@ -10,10 +10,10 @@ Upcoming Features:
 ~~Remote Hosting, not running in a session on my desktop~~
 As of 6/4/20, now hosted on Heroku: https://brokkolybot.herokuapp.com/
 
-A database not stored in a text file
+A database not stored in a text file 
 
 The ability to remove commands
 
 Unique commands and settings per server
 
-Many other TODOs
+Other TODOs

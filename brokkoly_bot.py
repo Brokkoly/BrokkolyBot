@@ -110,31 +110,7 @@ async def on_message(message):
         # last_message_time[message.guild.id]=old_timeout_time
 
     if (message.content.startswith("!add ")):
-        if (message.author.id in author_whitelist):
-            if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
-                await reject_message(message, "Error! No mentions allowed.")
-                return
-            result = parse_add(message.content)
-            if result[0]:
-                if (len(result[1]) > 21):
-                    await reject_message(message, "Error! Command cannot be longer than 20 characters.")
-                    return
-                if len(result[2]) > 500:
-                    await reject_message(message, "Error! Message cannot be longer than 500 characters.")
-                    return
-                if result[1] == "!help" or result[1] == "!add" or result[1] == "!estop" or result[1] == "!otherservers":
-                    await reject_message(message, "Error! That is a protected command")
-                    # todo make this into its own list
-                result[1] = result[1].lower()
-                add_to_file(result[1], result[2])
-                add_to_map(command_map, result[1], result[2])
-                await message.add_reaction(client.get_emoji(445805262880899075))
-                return
-            else:
-                await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
-                return
-        else:
-            await reject_message(message, "Error! Insufficient privileges to add.", False)
+        await handle_add(message)
 
     command = message.content.lower()
     if command in command_map:
@@ -165,6 +141,37 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
+
+
+async def handle_add(message):
+    if (message.author.id in author_whitelist):
+        if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
+            await reject_message(message, "Error! No mentions allowed.")
+            return
+        result = parse_add(message.content)
+        if result[0]:
+            command = result[1]
+            new_entry = result[2]
+            if (len(command) > 21):
+                await reject_message(message, "Error! Command cannot be longer than 20 characters.")
+                return
+            if len(new_entry) > 500:
+                await reject_message(message, "Error! Message cannot be longer than 500 characters.")
+                return
+            if command == "!help" or command == "!add" or command == "!estop" or command == "!otherservers":
+                await reject_message(message, "Error! That is a protected command")
+                return
+                # todo make this into its own list
+            command = command.lower()
+            add_to_file(command, new_entry)
+            add_to_map(command_map, command, new_entry)
+            await message.add_reaction(client.get_emoji(445805262880899075))
+            return
+        else:
+            await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
+            return
+    else:
+        await reject_message(message, "Error! Insufficient privileges to add.", False)
 
 
 async def reject_message(message, error, show_message=True):
