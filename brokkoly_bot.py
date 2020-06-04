@@ -6,6 +6,7 @@
 # TODO Make a channel where adding is allowed instead of a server.
 # TODO Internationalize? No, that costs money
 import random
+import atexit
 import re
 import discord
 import importlib
@@ -32,40 +33,40 @@ def add_to_map(command_map, command, message):
         command_map[command].append(message)
 
 
-def get_all_quotes(save_to_discord):
-    read_file = open("botdb.txt", "r")
-    command_map = {}
-    lines = read_file.readlines()
-    for line in lines:
-        first_space = line.find(" ")
-        command = line[:first_space]
-        message = line[first_space + 1:]
-        if save_to_discord:
-            save_to_discord(command, message)
-        add_to_map(command_map, command, message)
-    read_file.close()
-    return command_map
+# async def get_all_quotes(save_to_discord):
+#     print("GET_ALL_QUOTES CALLED")
+#     read_file = open("botdb.txt", "r")
+#     command_map = {}
+#     lines = read_file.readlines()
+#     for line in lines:
+#         first_space = line.find(" ")
+#         command = line[:first_space]
+#         message = line[first_space + 1:]
+#         if save_to_discord:
+#             await add_quote_to_discord(command, message)
+#         add_to_map(command_map, command, message)
+#     read_file.close()
+#     return command_map
 
 
 async def get_quotes_from_discord():
     command_map = {}
-    save_to_discord = False
     channel = client.get_channel(bot_database_channel_id)
     messages = await channel.history(limit=1000).flatten()
-    if messages.length == 0:
-        command_map = get_all_quotes(True)
-    else:
-        for message in messages:
-            content = message.content
-            first_space = content.find(" ")
-            command = content[:first_space]
-            message = content[first_space + 1:]
-            add_to_map(command_map, command, message)
+    #if len(messages) == 0:
+    #    command_map = await get_all_quotes(True)
+    #else:
+    for message in messages:
+        content = message.content
+        first_space = content.find(" ")
+        command = content[:first_space]
+        message = content[first_space + 1:]
+        add_to_map(command_map, command, message)
     return command_map
 
 
 brokkoly_favicon = None
-command_map = get_quotes_from_discord()
+command_map = None
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
 bot_database_channel_id = 718205785888260139
@@ -156,6 +157,10 @@ async def on_message(message):
 
 @client.event
 async def on_ready():
+    global command_map
+    await client.get_channel(225374061386006528).send("Starting Up")
+    command_map = await get_quotes_from_discord()
+    await client.get_channel(225374061386006528).send("Online")
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -183,7 +188,8 @@ async def handle_add(message):
                 return
                 # todo make this into its own list
             command = command.lower()
-            add_to_file(command, new_entry)
+            await add_quote_to_discord(command,new_entry)
+            #add_to_file(command, new_entry)
             add_to_map(command_map, command, new_entry)
             await message.add_reaction(client.get_emoji(445805262880899075))
             return
@@ -212,35 +218,21 @@ def parse_add(content):
         return [False]
 
 
-def add_to_file(command, message):
-    write_file = open("botdb.txt", "a")
-    write_file.write(command + " " + message)
-    write_file.write("\n")
-    write_file.close()
+# def add_to_file(command, message):
+#     write_file = open("botdb.txt", "a")
+#     write_file.write(command + " " + message)
+#     write_file.write("\n")
+#     write_file.close()
 
 
-async def get_quotes_from_discord():
-    command_map = {}
-    channel = client.get_channel(bot_database_channel_id)
-    messages = await channel.history(limit=1000).flatten()
-    if messages.length == 0:
-        command_map = get_all_quotes()
-    else:
-        for message in messages:
-            content = message.content
-            first_space = content.find(" ")
-            command = content[:first_space]
-            message = content[first_space + 1:]
-            add_to_map(command_map, command, message)
-    return command_map
-
-
-def add_quote_to_discord(command, message):
+async def add_quote_to_discord(command, message):
     save_message = command + " " + message
     channel = client.get_channel(bot_database_channel_id)
-    channel.send(save_message)
+    await channel.send(save_message)
     return
 
+async def shutting_down():
+    await client.get_channel(225374061386006528).send("Shutting Down")
 
-# atexit.register(saveStuff)
+atexit.register(shutting_down)
 client.run(TOKEN)
