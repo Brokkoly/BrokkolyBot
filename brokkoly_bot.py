@@ -54,7 +54,7 @@ game_jazz_id = 639124326385188864
 author_whitelist = [146687253370896385  # me
     , 115626912394510343  # ori
     , 200773608094564352  # wind
-    , 716358081222672404  # thaya
+    , 115602332863037443  # thaya
     , 185287142388400129  # thalia
     , 120756475768471554  # solyra
                     ]
@@ -141,6 +141,7 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
+    #TODO send startup message to bot testing zone when ready
 
 
 async def handle_add(message):
