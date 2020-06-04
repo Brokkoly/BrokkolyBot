@@ -133,17 +133,19 @@ async def on_message(message):
         else:
             await reject_message(message, "Error! Insufficient privileges to add.",False)
 
-    if message.guild.id in last_message_time and message.guild.id in timeout and \
-            not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[message.guild.id]:
-        return
-    else:
-        is_timed_out = False
-        last_message_time[message.guild.id] = message.created_at
+
 
     command = message.content.lower()
     if command in command_map:
         msg = random.choice(command_map[command])
         await message.channel.send(msg)
+        if message.guild.id in last_message_time and message.guild.id in timeout and \
+                not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
+                    message.guild.id]:
+            return
+        else:
+            is_timed_out = False
+            last_message_time[message.guild.id] = message.created_at
 
     '''
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
