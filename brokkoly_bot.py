@@ -32,7 +32,7 @@ def add_to_map(command_map, command, message):
         command_map[command].append(message)
 
 
-def get_all_quotes():
+def get_all_quotes(save_to_discord):
     read_file = open("botdb.txt", "r")
     command_map = {}
     lines = read_file.readlines()
@@ -40,16 +40,35 @@ def get_all_quotes():
         first_space = line.find(" ")
         command = line[:first_space]
         message = line[first_space + 1:]
-
+        if save_to_discord:
+            save_to_discord(command, message)
         add_to_map(command_map, command, message)
     read_file.close()
     return command_map
 
 
+async def get_quotes_from_discord():
+    command_map = {}
+    save_to_discord = False
+    channel = client.get_channel(bot_database_channel_id)
+    messages = await channel.history(limit=1000).flatten()
+    if messages.length == 0:
+        command_map = get_all_quotes(True)
+    else:
+        for message in messages:
+            content = message.content
+            first_space = content.find(" ")
+            command = content[:first_space]
+            message = content[first_space + 1:]
+            add_to_map(command_map, command, message)
+    return command_map
+
+
 brokkoly_favicon = None
-command_map = get_all_quotes()
+command_map = get_quotes_from_discord()
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
+bot_database_channel_id = 718205785888260139
 game_jazz_id = 639124326385188864
 author_whitelist = [146687253370896385  # me
     , 115626912394510343  # ori
@@ -141,7 +160,7 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
-    #TODO send startup message to bot testing zone when ready
+    # TODO send startup message to bot testing zone when ready
 
 
 async def handle_add(message):
@@ -200,37 +219,27 @@ def add_to_file(command, message):
     write_file.close()
 
 
-def parse_message(message):
-    retval = []
-    retval.append(message.author.id)
-    retval.append(message.channel.id)
-    retval.append(message.created_at)
-    custom_emojis = re.findall(r'<:\w*:\d*>', message.content)
-    # print(message.content)
-    # rint(custom_emojis)
-    custom_emojis = [int(e.split(':')[2].replace('>', '')) for e in custom_emojis]
-    # custom_emojis = [client.get_emoji(e) for e in custom_emojis]
-    retval.append(custom_emojis)
-    return retval
+async def get_quotes_from_discord():
+    command_map = {}
+    channel = client.get_channel(bot_database_channel_id)
+    messages = await channel.history(limit=1000).flatten()
+    if messages.length == 0:
+        command_map = get_all_quotes()
+    else:
+        for message in messages:
+            content = message.content
+            first_space = content.find(" ")
+            command = content[:first_space]
+            message = content[first_space + 1:]
+            add_to_map(command_map, command, message)
+    return command_map
 
 
-def compileNumbers(messages):
-    print("Compiling Data")
-    print("Length of messages: {}".format(len(messages)))
-    data = dict()
-    for message in messages:
-        for e in message[3]:
-            if str(e) in data:
-                data[str(e)] += 1
-            else:
-                data[str(e)] = 1
-    print(data)
-    print("Length of dict: {}".format(len(data.keys())))
-    for e in data:
-        print(e)
-        # print(discord.utils.get(client.emojis,id=int(e)))
-        emoji = discord.utils.get(client.emojis, id=int(e))
-        print(":{}: : ".format(str(emoji), data[str(e)]))
+def add_quote_to_discord(command, message):
+    save_message = command + " " + message
+    channel = client.get_channel(bot_database_channel_id)
+    channel.send(save_message)
+    return
 
 
 # atexit.register(saveStuff)
