@@ -1,0 +1,1 @@
+worker: python brokkoly_bot.py
