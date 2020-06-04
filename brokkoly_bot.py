@@ -76,7 +76,6 @@ random.seed()
 @client.event
 async def on_message(message):
     global brokkoly_favicon
-    is_timed_out = True
     # Don't reply to our own messages
     if message.author == client.user:
         return
@@ -160,12 +159,12 @@ async def handle_add(message):
             if len(new_entry) > 500:
                 await reject_message(message, "Error! Message cannot be longer than 500 characters.")
                 return
+            command = command.lower()
             if command == "!help" or command == "!add" or command == "!estop" or command == "!otherservers":
                 await reject_message(message, "Error! That is a protected command")
                 return
                 # todo make this into its own list
-            command = command.lower()
-            await add_quote_to_discord(command,new_entry)
+            await add_quote_to_discord(command, new_entry)
             add_to_map(command_map, command, new_entry)
             await message.add_reaction(client.get_emoji(445805262880899075))
             return
@@ -200,8 +199,9 @@ async def add_quote_to_discord(command, message):
     await channel.send(save_message)
     return
 
+@atexit.register
 async def shutting_down():
     await client.get_channel(225374061386006528).send("Shutting Down")
 
-atexit.register(shutting_down)
+
 client.run(TOKEN)
