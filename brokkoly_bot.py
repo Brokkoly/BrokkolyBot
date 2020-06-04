@@ -9,7 +9,6 @@ import random
 import atexit
 import re
 import discord
-import importlib
 from importlib import util
 import os
 
@@ -33,29 +32,10 @@ def add_to_map(command_map, command, message):
         command_map[command].append(message)
 
 
-# async def get_all_quotes(save_to_discord):
-#     print("GET_ALL_QUOTES CALLED")
-#     read_file = open("botdb.txt", "r")
-#     command_map = {}
-#     lines = read_file.readlines()
-#     for line in lines:
-#         first_space = line.find(" ")
-#         command = line[:first_space]
-#         message = line[first_space + 1:]
-#         if save_to_discord:
-#             await add_quote_to_discord(command, message)
-#         add_to_map(command_map, command, message)
-#     read_file.close()
-#     return command_map
-
-
 async def get_quotes_from_discord():
     command_map = {}
     channel = client.get_channel(bot_database_channel_id)
     messages = await channel.history(limit=1000).flatten()
-    #if len(messages) == 0:
-    #    command_map = await get_all_quotes(True)
-    #else:
     for message in messages:
         content = message.content
         first_space = content.find(" ")
@@ -97,7 +77,6 @@ random.seed()
 async def on_message(message):
     global brokkoly_favicon
     is_timed_out = True
-    # old_timeout_time = last_message_time[message.guild.id]
     # Don't reply to our own messages
     if message.author == client.user:
         return
@@ -127,7 +106,6 @@ async def on_message(message):
         await message.add_reaction("📧")
         return
         # todo should we allow people to use !help and not have it affect the time
-        # last_message_time[message.guild.id]=old_timeout_time
 
     if (message.content.startswith("!add ")):
         await handle_add(message)
@@ -141,7 +119,6 @@ async def on_message(message):
                     message.guild.id]:
             return
         else:
-            is_timed_out = False
             last_message_time[message.guild.id] = message.created_at
 
     '''
@@ -189,7 +166,6 @@ async def handle_add(message):
                 # todo make this into its own list
             command = command.lower()
             await add_quote_to_discord(command,new_entry)
-            #add_to_file(command, new_entry)
             add_to_map(command_map, command, new_entry)
             await message.add_reaction(client.get_emoji(445805262880899075))
             return
@@ -216,13 +192,6 @@ def parse_add(content):
         return [True, command, message]
     else:
         return [False]
-
-
-# def add_to_file(command, message):
-#     write_file = open("botdb.txt", "a")
-#     write_file.write(command + " " + message)
-#     write_file.write("\n")
-#     write_file.close()
 
 
 async def add_quote_to_discord(command, message):
