@@ -50,6 +50,9 @@ timeout = {
 
 @client.event
 async def on_message(message):
+    """Fires every time a user sends a message in an associated server.
+    This is where everything happens.
+    """
     global brokkoly_favicon
     global command_map
     # Don't reply to our own messages
@@ -88,13 +91,13 @@ async def on_message(message):
     command = message.content.lower()
     if command in command_map:
         msg = random.choice(command_map[command])
-        await message.channel.send(msg)
         if message.guild.id in last_message_time and message.guild.id in timeout and \
                 not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
                     message.guild.id]:
             return
         else:
             last_message_time[message.guild.id] = message.created_at
+            await message.channel.send(msg)
 
     '''
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
@@ -109,9 +112,12 @@ async def on_message(message):
 
 @client.event
 async def on_ready():
+    """Fires once the discord bot is ready.
+    Notify the test server that the bot has started
+    """
     global command_map
     await client.get_channel(225374061386006528).send("Starting Up")
-    command_map = await get_quotes_from_discord()
+    command_map = await get_map_from_discord()
     await client.get_channel(225374061386006528).send("Online")
     print('Logged in as')
     print(client.user.name)
@@ -120,6 +126,8 @@ async def on_ready():
 
 
 async def handle_add(message):
+    """add the value in message to the the command map"""
+    global command_map
     if message.author.id in author_whitelist:
         if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
             await reject_message(message, "Error! No mentions allowed.")
@@ -150,12 +158,14 @@ async def handle_add(message):
 
 
 async def reject_message(message, error, show_message=True):
+    """React with an x to the message, and provide an error message"""
     await message.add_reaction("❌")
     if show_message:
         await message.channel.send(error)
 
 
 def parse_add(content):
+    """parse the content to get the command and message"""
     string_to_parse = content[5:]  # Cut off the add since we've already matched
     if re.fullmatch(after_add_compiled_regex, string_to_parse):
         first_space = string_to_parse.find(" ")
@@ -167,13 +177,16 @@ def parse_add(content):
 
 
 def add_to_map(command_map_to_add_to, command, message):
+    """Add the command and message to the command map"""
     if command not in command_map_to_add_to:
         command_map_to_add_to[command] = []
     if message not in command_map_to_add_to[command]:
         command_map_to_add_to[command].append(message)
 
 
-async def get_quotes_from_discord():
+async def get_map_from_discord():
+    """Load the map form the discord database channel"""
+    # TODO Use an actual database
     new_command_map = {}
     channel = client.get_channel(bot_database_channel_id)
     messages = await channel.history(limit=1000).flatten()
@@ -187,6 +200,7 @@ async def get_quotes_from_discord():
 
 
 async def add_quote_to_discord(command, message):
+    """Sends a message to the discord database with the new entry"""
     save_message = command + " " + message
     channel = client.get_channel(bot_database_channel_id)
     await channel.send(save_message)
