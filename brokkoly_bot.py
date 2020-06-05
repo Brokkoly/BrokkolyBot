@@ -51,13 +51,20 @@ mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
 bot_database_channel_id = 718205785888260139
 game_jazz_id = 639124326385188864
-author_whitelist = [146687253370896385  # me
+author_whitelist = [
+    146687253370896385  # me
     , 115626912394510343  # ori
     , 200773608094564352  # wind
     , 115602332863037443  # thaya
     , 185287142388400129  # thalia
     , 120756475768471554  # solyra
-                    ]
+]
+protected_commands = [
+    "!help"
+    , "!add"
+    , "!estop"
+    , "!otherservers"
+]
 # TODO Check roles instead of just ids
 lastDRS = None
 highScoreDRS = None
@@ -160,10 +167,9 @@ async def handle_add(message):
                 await reject_message(message, "Error! Message cannot be longer than 500 characters.")
                 return
             command = command.lower()
-            if command == "!help" or command == "!add" or command == "!estop" or command == "!otherservers":
+            if command in protected_commands:
                 await reject_message(message, "Error! That is a protected command")
                 return
-                # todo make this into its own list
             await add_quote_to_discord(command, new_entry)
             add_to_map(command_map, command, new_entry)
             await message.add_reaction(client.get_emoji(445805262880899075))
