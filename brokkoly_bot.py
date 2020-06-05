@@ -13,7 +13,7 @@ token_spec = util.find_spec('tokens')
 if token_spec is not None:
     import tokens
 
-    TOKEN = tokens.TOKENTEST
+    TOKEN = tokens.TOKEN_TEST
 else:
     TOKEN = os.environ['TOKEN']
 
@@ -197,7 +197,7 @@ def find_in_command_map(command, to_search):
     closest_number = 10000000
     for entry in command_map[command]:
         new_closest_number = entry.lower().find(to_search)
-        if new_closest_number < closest_number:
+        if new_closest_number < closest_number and new_closest_number != -1:
             closest_number = new_closest_number
             closest = entry
     return closest
