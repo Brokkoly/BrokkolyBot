@@ -1,10 +1,6 @@
-# TODO Get ~~and validate~~ input for new commands
-# TODO Time out users who abuse the bot
-# TODO Properly figure out if we're on heroku or running locally
 # TODO In chat maintenance of the string library
-# TODO Figure out performance of stripping command from string before doing manipulation when adding
-# TODO Make a channel where adding is allowed instead of a server.
-# TODO Internationalize? No, that costs money
+# todo separate the commands by server. give yourself the ability to add commands to the master list
+
 import random
 import atexit
 import re
@@ -24,34 +20,17 @@ else:
 ready = False
 client = discord.Client()
 
-
-def add_to_map(command_map, command, message):
-    if not command in command_map:
-        command_map[command] = []
-    if not message in command_map[command]:
-        command_map[command].append(message)
-
-
-async def get_quotes_from_discord():
-    command_map = {}
-    channel = client.get_channel(bot_database_channel_id)
-    messages = await channel.history(limit=1000).flatten()
-    for message in messages:
-        content = message.content
-        first_space = content.find(" ")
-        command = content[:first_space]
-        message = content[first_space + 1:]
-        add_to_map(command_map, command, message)
-    return command_map
-
-
 brokkoly_favicon = None
 command_map = None
+last_message_time = {}
+random.seed()
+
+# ids and constants
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
 bot_database_channel_id = 718205785888260139
 game_jazz_id = 639124326385188864
-author_whitelist = [
+author_whitelist = [  # TODO Check roles instead of just ids. Maybe give people in the bot server the ability
     146687253370896385  # me
     , 115626912394510343  # ori
     , 200773608094564352  # wind
@@ -59,25 +38,13 @@ author_whitelist = [
     , 185287142388400129  # thalia
     , 120756475768471554  # solyra
 ]
-protected_commands = [
-    "!help"
-    , "!add"
-    , "!estop"
-    , "!otherservers"
-]
-# TODO Check roles instead of just ids
-lastDRS = None
-highScoreDRS = None
-lastRL = None
-highScoreRL = None
+protected_commands = ["!help", "!add", "!estop", "!otherservers"]
 after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
 after_add_compiled_regex = re.compile(after_add_regex_string)
 timeout = {
     mtg_legacy_discord_id: 60,
     brokkolys_bot_testing_zone_id: 5
 }
-last_message_time = {}
-random.seed()
 
 
 @client.event
@@ -111,7 +78,6 @@ async def on_message(message):
         await user_dm_channel.send(response)
         await message.add_reaction("📧")
         return
-        # todo should we allow people to use !help and not have it affect the time
 
     if (message.content.startswith("!add ")):
         await handle_add(message)
@@ -148,7 +114,6 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
-    # TODO send startup message to bot testing zone when ready
 
 
 async def handle_add(message):
@@ -160,7 +125,7 @@ async def handle_add(message):
         if result[0]:
             command = result[1]
             new_entry = result[2]
-            if (len(command) > 21):
+            if len(command) > 21:
                 await reject_message(message, "Error! Command cannot be longer than 20 characters.")
                 return
             if len(new_entry) > 500:
@@ -189,7 +154,6 @@ async def reject_message(message, error, show_message=True):
 
 def parse_add(content):
     string_to_parse = content[5:]  # Cut off the add since we've already matched
-    # TODO figure out if doing string slicing costs more than just regexing
     if re.fullmatch(after_add_compiled_regex, string_to_parse):
         first_space = string_to_parse.find(" ")
         command = string_to_parse[:first_space]
@@ -197,6 +161,26 @@ def parse_add(content):
         return [True, command, message]
     else:
         return [False]
+
+
+def add_to_map(command_map_to_add_to, command, message):
+    if command not in command_map_to_add_to:
+        command_map_to_add_to[command] = []
+    if message not in command_map_to_add_to[command]:
+        command_map_to_add_to[command].append(message)
+
+
+async def get_quotes_from_discord():
+    new_command_map = {}
+    channel = client.get_channel(bot_database_channel_id)
+    messages = await channel.history(limit=1000).flatten()
+    for message in messages:
+        content = message.content
+        first_space = content.find(" ")
+        command = content[:first_space]
+        message = content[first_space + 1:]
+        add_to_map(new_command_map, command, message)
+    return new_command_map
 
 
 async def add_quote_to_discord(command, message):

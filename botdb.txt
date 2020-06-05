@@ -32,18 +32,12 @@
 !oko elk me uwu
 !optimize Take out the bad cards and add delver, ponder, brainstorm, daze, and force of will
 !todo add the ability to remove messages
-!todo time out users who abuse the bot
-!todo limit the number of commands you display if there are too many to reasonably display in a message
 !oko The effect of elking any elks or elks, when at a high play rate, reduces diversity in the metaelk. Elks built around unique elks or big elks have less chances to succeed when opponents can elk their key elks without specific elk-building intent.
 !test !help
-!todo stop running me off of your computer you wingus
 !oko Did you ever hear the tragedy of darth Oko the twink? I Thought-Knot. It's not a story a fair deck would tell you. Its a blue-green planeswalker. Darth Oko was a dark lord of the elk so powerful and so treacherous he could use food tokens to influence elks to control permanents. He had such a knowledge of the food tokens that he could even keep the ones he cared about from losing life. The planeswalker side of magic is a pathway to many abilities some consider to be broken. He became so powerful that the only thing he was afraid of was losing his power, which eventually, of course, he did. He taught WotC everything he knew, then WotC banned him in his sleep. Ironic, he could save others from bans but not himself.
 !brokkoly broccoli
-!todo don't die if an emoji is in a message
 !brokkoly testing in prod
 !mod bow to us
-!todo bot seems to be excepting when reactions are added to messages. doesn't cause crashing though
-!todo separate the commands by server. give yourself the ability to add commands to the master list
 !compost https://twitter.com/Foone/status/1012789232555864064
 !labe https://twitter.com/ArcumS/status/1267118976393494528
 !test hello
