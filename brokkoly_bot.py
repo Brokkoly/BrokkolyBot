@@ -21,7 +21,7 @@ ready = False
 client = discord.Client()
 
 brokkoly_favicon = None
-command_map = None
+command_map = {}
 last_message_time = {}
 random.seed()
 
@@ -30,7 +30,8 @@ mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
 bot_database_channel_id = 718205785888260139
 game_jazz_id = 639124326385188864
-author_whitelist = [  # TODO Check roles instead of just ids. Maybe give people in the bot server the ability
+# TODO Check roles instead of just ids. Maybe give people in the bot server the ability
+author_whitelist = [
     146687253370896385  # me
     , 115626912394510343  # ori
     , 200773608094564352  # wind
@@ -50,6 +51,7 @@ timeout = {
 @client.event
 async def on_message(message):
     global brokkoly_favicon
+    global command_map
     # Don't reply to our own messages
     if message.author == client.user:
         return
@@ -60,7 +62,8 @@ async def on_message(message):
         brokkoly_dm = await brokkoly.create_dm()
         await brokkoly_dm.send("Emergency Stop Called. Send Help.")
         await message.channel.send(
-            "@brokkoly#0001 Emergency Stop Called. Send Help.\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
+            "@brokkoly#0001 Emergency Stop Called. Send Help."
+            "\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
         quit()
 
     if message.content.startswith("!help"):
@@ -79,7 +82,7 @@ async def on_message(message):
         await message.add_reaction("📧")
         return
 
-    if (message.content.startswith("!add ")):
+    if message.content.startswith("!add "):
         await handle_add(message)
 
     command = message.content.lower()
@@ -117,7 +120,7 @@ async def on_ready():
 
 
 async def handle_add(message):
-    if (message.author.id in author_whitelist):
+    if message.author.id in author_whitelist:
         if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
             await reject_message(message, "Error! No mentions allowed.")
             return
