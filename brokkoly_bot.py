@@ -17,10 +17,8 @@ if token_spec is not None:
 else:
     TOKEN = os.environ['TOKEN']
 
-ready = False
 client = discord.Client()
 
-brokkoly_favicon = None
 command_map = {}
 last_message_time = {}
 random.seed()
@@ -53,7 +51,6 @@ async def on_message(message):
     """Fires every time a user sends a message in an associated server.
     This is where everything happens.
     """
-    global brokkoly_favicon
     global command_map
     # Don't reply to our own messages
     if message.author == client.user:
@@ -209,6 +206,7 @@ async def add_quote_to_discord(command, message):
 
 @atexit.register
 async def shutting_down():
+    # TODO Make this work?
     await client.get_channel(225374061386006528).send("Shutting Down")
 
 
