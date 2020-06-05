@@ -13,7 +13,7 @@ token_spec = util.find_spec('tokens')
 if token_spec is not None:
     import tokens
 
-    TOKEN = tokens.TOKEN
+    TOKEN = tokens.TOKENTEST
 else:
     TOKEN = os.environ['TOKEN']
 
@@ -22,7 +22,9 @@ client = discord.Client()
 command_map = {}
 last_message_time = {}
 random.seed()
-
+brokkoly_bot_test_id = 449815971897671690
+brokkoly_bot_id=225369871393882113
+my_bots = [brokkoly_bot_id,brokkoly_bot_test_id]
 # ids and constants
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
@@ -53,7 +55,7 @@ async def on_message(message):
     """
     global command_map
     # Don't reply to our own messages
-    if message.author == client.user:
+    if message.author.id in my_bots:
         return
     if not message.content.startswith("!"):
         return
@@ -86,8 +88,14 @@ async def on_message(message):
         await handle_add(message)
 
     command = message.content.lower()
+    command, to_search = parse_search(command)
     if command in command_map:
-        msg = random.choice(command_map[command])
+        msg = ""
+        if to_search != None:
+            msg = find_in_command_map(command, to_search)
+        else:
+            msg = random.choice(command_map[command])
+        if msg == "": return
         if message.guild.id in last_message_time and message.guild.id in timeout and \
                 not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
                     message.guild.id]:
@@ -171,6 +179,28 @@ def parse_add(content):
         return [True, command, message]
     else:
         return [False]
+
+
+def parse_search(content):
+    """parse the content to get the command and message"""
+    # TODO reject search if it is unreasonably long
+    first_space = content.find(" ")
+    if first_space == -1:
+        return [content, None]
+    command = content[:first_space]
+    to_search = content[first_space + 1:]
+    return [command, to_search]
+
+
+def find_in_command_map(command, to_search):
+    closest = ""
+    closest_number = 10000000
+    for entry in command_map[command]:
+        new_closest_number = entry.lower().find(to_search)
+        if new_closest_number < closest_number:
+            closest_number = new_closest_number
+            closest = entry
+    return closest
 
 
 def add_to_map(command_map_to_add_to, command, message):
