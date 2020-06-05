@@ -172,7 +172,7 @@ async def handle_add(message):
             await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
             return
     else:
-        await reject_message(message, "Error! Insufficient privileges to add.", False)
+        await reject_message(message, "Error! Insufficient privileges to add.", True)
 
 
 async def reject_message(message, error, show_message=True):
@@ -198,6 +198,7 @@ async def add_quote_to_discord(command, message):
     channel = client.get_channel(bot_database_channel_id)
     await channel.send(save_message)
     return
+
 
 @atexit.register
 async def shutting_down():
