@@ -49,7 +49,7 @@ if (IS_TEST):
     bot_database_channel_id = bot_database_channel_ids["test"]
     bot_ui_channel_id = bot_test_channel_ids["test"]
 else:
-    bot_database_channel_id = ["prod"]
+    bot_database_channel_id = bot_database_channel_ids["prod"]
     bot_ui_channel_id = bot_test_channel_ids["prod"]
 game_jazz_id = 639124326385188864
 # TODO Check roles instead of just ids. Maybe give people in the bot server the ability
