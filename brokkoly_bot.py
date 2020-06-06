@@ -9,11 +9,26 @@ from importlib import util
 import os
 
 TOKEN = None
+IS_TEST = False
+bot_database_channel_ids = {
+    "test": 718850472814968905,
+    "prod": 718205785888260139
+}
+bot_ids = {
+    "test": 449815971897671690,
+    "prod": 225369871393882113
+}
+bot_test_channel_ids = {
+    "test": 718850430049714267,
+    "prod": 718854497245462588
+}
+
 token_spec = util.find_spec('tokens')
 if token_spec is not None:
     import tokens
 
     TOKEN = tokens.TOKEN_TEST
+    IS_TEST = True
 else:
     TOKEN = os.environ['TOKEN']
 
@@ -23,12 +38,19 @@ command_map = {}
 last_message_time = {}
 random.seed()
 brokkoly_bot_test_id = 449815971897671690
-brokkoly_bot_id=225369871393882113
-my_bots = [brokkoly_bot_id,brokkoly_bot_test_id]
+brokkoly_bot_id = 225369871393882113
+my_bots = [brokkoly_bot_id, brokkoly_bot_test_id]
 # ids and constants
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
-bot_database_channel_id = 718205785888260139
+bot_database_channel_id = None
+bot_ui_channel_id = None
+if (IS_TEST):
+    bot_database_channel_id = bot_database_channel_ids["test"]
+    bot_ui_channel_id = bot_test_channel_ids["test"]
+else:
+    bot_database_channel_id = ["prod"]
+    bot_ui_channel_id = bot_test_channel_ids["prod"]
 game_jazz_id = 639124326385188864
 # TODO Check roles instead of just ids. Maybe give people in the bot server the ability
 author_whitelist = [
@@ -62,9 +84,14 @@ async def on_message(message):
     if message.content.startswith("!estop") and message.author.id in author_whitelist:
         brokkoly = client.get_user(146687253370896385)
         brokkoly_dm = await brokkoly.create_dm()
-        await brokkoly_dm.send("Emergency Stop Called. Send Help.")
+        await brokkoly_dm.send("Emergency Stop Called. Send Help."
+                               + "\nServer: " + message.guild.name
+                               + "\nChannel: " + message.channel.name
+                               + "\nTime & Date: " + message.created_at.strftime("%H:%M:%S, %m/%d/%Y")
+                               + "\n" + message.jump_url
+                               )
         await message.channel.send(
-            "@brokkoly#0001 Emergency Stop Called. Send Help."
+            "@Brokkoly#0001 Emergency Stop Called. Send Help."
             "\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
         quit()
 
@@ -96,9 +123,11 @@ async def on_message(message):
         else:
             msg = random.choice(command_map[command])
         if msg == "": return
-        if message.guild.id in last_message_time and message.guild.id in timeout and \
-                not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
-                    message.guild.id]:
+        if message.guild.id in last_message_time \
+                and message.guild.id in timeout \
+                and not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
+            message.guild.id]:
+            await message.add_reaction("⏳")
             return
         else:
             last_message_time[message.guild.id] = message.created_at
@@ -121,9 +150,9 @@ async def on_ready():
     Notify the test server that the bot has started
     """
     global command_map
-    await client.get_channel(225374061386006528).send("Starting Up")
+    await client.get_channel(bot_ui_channel_id).send("Starting Up")
     command_map = await get_map_from_discord()
-    await client.get_channel(225374061386006528).send("Online")
+    await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -151,8 +180,8 @@ async def handle_add(message):
             if command in protected_commands:
                 await reject_message(message, "Error! That is a protected command")
                 return
-            await add_quote_to_discord(command, new_entry)
-            add_to_map(command_map, command, new_entry)
+            if add_to_map(command_map, command, new_entry):
+                await add_quote_to_discord(command, new_entry)
             await message.add_reaction(client.get_emoji(445805262880899075))
             return
         else:
@@ -209,6 +238,9 @@ def add_to_map(command_map_to_add_to, command, message):
         command_map_to_add_to[command] = []
     if message not in command_map_to_add_to[command]:
         command_map_to_add_to[command].append(message)
+        return True
+    else:
+        return False
 
 
 async def get_map_from_discord():
@@ -237,7 +269,7 @@ async def add_quote_to_discord(command, message):
 @atexit.register
 async def shutting_down():
     # TODO Make this work?
-    await client.get_channel(225374061386006528).send("Shutting Down")
+    await client.get_channel(bot_ui_channel_id).send("Shutting Down")
 
 
 client.run(TOKEN)
