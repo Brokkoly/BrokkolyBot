@@ -1,5 +1,6 @@
-# TODO In chat maintenance of the string library
+# todo In chat maintenance of the string library
 # todo separate the commands by server. give yourself the ability to add commands to the master list
+# todo Use a database
 
 import random
 import atexit
