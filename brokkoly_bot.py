@@ -211,8 +211,11 @@ def parse_add(content):
 
 
 def parse_search(content):
-    """parse the content to get the command and message"""
-    # TODO reject search if it is unreasonably long
+    """parse the content to get the command and search string.
+    The Search string may be ""
+    Keyword Arguments:
+    content -- a string to split into a command and search string.
+    """
     first_space = content.find(" ")
     if first_space == -1:
         return [content, None]
@@ -226,6 +229,7 @@ def find_in_command_map(command, to_search):
     closest_number = 10000000
     for entry in command_map[command]:
         new_closest_number = entry.lower().find(to_search)
+        if len(to_search) > len(entry): continue
         if new_closest_number < closest_number and new_closest_number != -1:
             closest_number = new_closest_number
             closest = entry
