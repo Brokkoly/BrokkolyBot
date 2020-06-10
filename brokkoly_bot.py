@@ -164,7 +164,7 @@ async def handle_add(message):
     """add the value in message to the the command map"""
     global command_map
     if message.author.id in author_whitelist:
-        if len(message.mentions) > 0 or len(message.role_mentions) > 0 or message.mention_everyone:
+        if message.mentions or message.role_mentions or message.mention_everyone:
             await reject_message(message, "Error! No mentions allowed.")
             return
         result = parse_add(message.content)
