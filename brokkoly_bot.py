@@ -8,9 +8,12 @@ import re
 import discord
 from importlib import util
 import os
+import psycopg2
 
 TOKEN = None
 IS_TEST = False
+DATABASE_URL = None
+# conn = None
 bot_database_channel_ids = {
     "test": 718850472814968905,
     "prod": 718205785888260139
@@ -30,8 +33,12 @@ if token_spec is not None:
 
     TOKEN = tokens.TOKEN_TEST
     IS_TEST = True
+    # DATABASE_URL = tokens.TOKEN_TEST
 else:
     TOKEN = os.environ['TOKEN']
+    # DATABASE_URL = os.environ['DATABASE_URL']
+
+# conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
 client = discord.Client()
 
