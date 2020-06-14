@@ -9,6 +9,7 @@ import discord
 from importlib import util
 import os
 import psycopg2
+from brokkoly_bot_database import *
 
 TOKEN = None
 IS_TEST = False
@@ -33,12 +34,12 @@ if token_spec is not None:
 
     TOKEN = tokens.TOKEN_TEST
     IS_TEST = True
-    # DATABASE_URL = tokens.TOKEN_TEST
+    DATABASE_URL = tokens.DATABASE_URL
 else:
     TOKEN = os.environ['TOKEN']
-    # DATABASE_URL = os.environ['DATABASE_URL']
+    DATABASE_URL = os.environ['DATABASE_URL']
 
-# conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
 client = discord.Client()
 
@@ -51,6 +52,7 @@ my_bots = [brokkoly_bot_id, brokkoly_bot_test_id]
 # ids and constants
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
+madison_discord_id = 368078887361708033
 bot_database_channel_id = None
 bot_ui_channel_id = None
 if (IS_TEST):
@@ -74,7 +76,8 @@ after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already s
 after_add_compiled_regex = re.compile(after_add_regex_string)
 timeout = {
     mtg_legacy_discord_id: 60,
-    brokkolys_bot_testing_zone_id: 5
+    brokkolys_bot_testing_zone_id: 5,
+    madison_discord_id: 0
 }
 
 
@@ -121,25 +124,28 @@ async def on_message(message):
 
     if message.content.startswith("!add "):
         await handle_add(message)
+        return
 
-    command = message.content.lower()
+    command = message.content.lower()[1:]
     command, to_search = parse_search(command)
-    if command in command_map:
-        msg = ""
-        if to_search != None:
-            msg = find_in_command_map(command, to_search)
-        else:
-            msg = random.choice(command_map[command])
-        if msg == "": return
-        if message.guild.id in last_message_time \
-                and message.guild.id in timeout \
-                and not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
-            message.guild.id]:
-            await message.add_reaction("⏳")
-            return
-        else:
-            last_message_time[message.guild.id] = message.created_at
-            await message.channel.send(msg)
+    # if command in command_map:
+    msg = ""
+    # todo make search command
+    # if to_search != None:
+    #     msg = find_in_command_map(command, to_search)
+    # else:
+    #     msg = random.choice(command_map[command])
+    msg = get_message(conn, message.guild.id, command)
+    if msg == "": return
+    if message.guild.id in last_message_time \
+            and message.guild.id in timeout \
+            and not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
+        message.guild.id]:
+        await message.add_reaction("⏳")
+        return
+    else:
+        last_message_time[message.guild.id] = message.created_at
+        await message.channel.send(msg)
 
     '''
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
@@ -157,9 +163,10 @@ async def on_ready():
     """Fires once the discord bot is ready.
     Notify the test server that the bot has started
     """
-    global command_map
+    # global command_map
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
-    command_map = await get_map_from_discord()
+    # command_map = await get_map_from_discord()
+    # convert_from_map(conn,command_map,timeout)
     await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
     print(client.user.name)
@@ -188,9 +195,10 @@ async def handle_add(message):
             if command in protected_commands:
                 await reject_message(message, "Error! That is a protected command")
                 return
-            if add_to_map(command_map, command, new_entry):
-                await add_quote_to_discord(command, new_entry)
-            await message.add_reaction(client.get_emoji(445805262880899075))
+            # if add_to_map(command_map, command, new_entry):
+            if add_command(conn, message.guild.id, command, new_entry):
+                #    await add_quote_to_discord(command, new_entry)
+                await message.add_reaction(client.get_emoji(445805262880899075))
             return
         else:
             await reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
@@ -211,7 +219,7 @@ def parse_add(content):
     string_to_parse = content[5:]  # Cut off the add since we've already matched
     if re.fullmatch(after_add_compiled_regex, string_to_parse):
         first_space = string_to_parse.find(" ")
-        command = string_to_parse[:first_space]
+        command = string_to_parse[1:first_space]
         message = string_to_parse[first_space + 1:]
         return [True, command, message]
     else:
@@ -279,9 +287,10 @@ async def add_quote_to_discord(command, message):
 
 
 @atexit.register
-async def shutting_down():
+def shutting_down():
     # TODO Make this work?
-    await client.get_channel(bot_ui_channel_id).send("Shutting Down")
+    conn.close()
+    #await client.get_channel(bot_ui_channel_id).send("Shutting Down")
 
 
 client.run(TOKEN)

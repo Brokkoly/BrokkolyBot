@@ -21,6 +21,8 @@ try:
     insert_query = """ INSERT INTO COMMAND_LIST (server_id, command_string, entry_value) VALUES (%s,%s,%s)"""
     values = (0, "test", "test message")
     add_command(conn, 0, 'test', 'test_message')
+
+    add_server(conn, 225374061386006528, 5)
     # cursor = conn.cursor()
 
     # cursor.execute(insert_query,values)
@@ -31,6 +33,7 @@ try:
     # print(count, "Record successfully inserted")
     # print(select_all(conn))
     print("Found Message: ", get_message(conn, 0, "test"))
+    print("Found Timeout: ", get_server_timeout(conn, 225374061386006528))
     # select_query = "SELECT * FROM COMMAND_LIST"
     # cursor.execute(select_query)
 

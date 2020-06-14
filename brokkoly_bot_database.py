@@ -14,24 +14,53 @@ def add_command(conn, server_id, command, message):
     :param message:
     :return:
     """
-    # TODO check if the entry already exists
     cursor = conn.cursor()
     send_query(cursor, """
         SELECT * FROM COMMAND_LIST
         WHERE server_id = %s
             AND command_string = %s
-            AND entry_value = %s;""",
+            AND entry_value = %s;
+            ;""",
                (server_id, command, message))
     if (cursor.rowcount > 0):
         print("That command already exists!\n", "Count=%d" % (cursor.rowcount))
+        cursor.close()
         return False
     send_query(cursor, """ INSERT INTO COMMAND_LIST (server_id, command_string, entry_value) VALUES (%s,%s,%s)""",
                (server_id, command, message))
+    cursor.close()
+    conn.commit()
     return True
 
 
+def add_server(conn, server_id, timeout):
+    if get_server_timeout(conn, server_id) >= 0:
+        return
+    if timeout < 0:
+        timeout = 30
+    cursor = conn.cursor()
+    send_query(cursor,
+               """INSERT INTO SERVER_LIST (server_id, timeout_seconds) VALUES (%s, %s)""",
+               (server_id, timeout))
+    cursor.close()
+    conn.commit()
+
+
+def get_server_timeout(conn, server_id):
+    cursor = conn.cursor()
+    send_query(cursor, """
+            SELECT timeout_seconds FROM SERVER_LIST WHERE SERVER_LIST.server_id=%s""", (server_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    if not result:
+        return -1
+    print(result[0])
+    return result[0]
+
+
 def select_all(conn):
-    send_query(conn, """
+    cursor = conn.cursor()
+    send_query(cursor, """
     SELECT * FROM COMMAND_LIST
     """)
 
@@ -47,13 +76,16 @@ def get_message(conn, server_id, command):
     send_query(cursor, """
     SELECT entry_value
     FROM COMMAND_LIST
-    WHERE server_id = %d
-        AND command_string = \'%s\'
+    WHERE server_id = %s
+        AND command_string = %s
     ORDER BY RANDOM()
     LIMIT 1;
-    """ % (server_id, command))
+    """, (server_id, command))
     message = cursor.fetchone()
-    print(message[0])
+    cursor.close()
+    if not message:
+        return ""
+    print(message)
     return message[0]
 
 
@@ -77,19 +109,25 @@ def create_tables(conn):
 
 
 def drop_command_list(conn):
-    send_query(conn,
+    cursor = conn.cursor()
+    send_query(cursor,
                """
                DROP TABLE IF EXISTS COMMAND_LIST CASCADE;
                """
                )
+    cursor.close()
+    conn.commit()
 
 
 def drop_server_list(conn):
-    send_query(conn,
+    cursor = conn.cursor()
+    send_query(cursor,
                """
                DROP TABLE IF EXISTS SERVER_LIST CASCADE;
                """
                )
+    cursor.close()
+    conn.commit()
 
 
 def send_query(cur, command, args=None):
@@ -102,3 +140,11 @@ def send_query(cur, command, args=None):
 
     except (Exception, psycopg2.DatabaseError) as error:
         print("Error while executing command:\n", error)
+
+
+def convert_from_map(conn, command_map, timeout):
+    for server_id in timeout:
+        add_server(conn, server_id, timeout[server_id])
+        for command in command_map:
+            for entry in command_map[command]:
+                add_command(conn, server_id, command[1:], entry)
