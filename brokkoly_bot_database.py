@@ -33,6 +33,62 @@ def add_command(conn, server_id, command, message):
     return True
 
 
+def remove_command(conn, server_id=None, command="", command_id=None):
+    cursor = conn.cursor()
+    query = ""
+    params = None
+    if (command_id):
+        query = """
+        DELETE FROM COMMAND_LIST
+        WHERE command_id = %s;
+        """
+        params = (command_id,)
+    else:
+        query = """
+        DELETE FROM COMMAND_LIST
+        WHERE server_id = %s
+            AND command_string = %s
+        """
+        params = (server_id, command)
+    send_query(cursor, query, params)
+    cursor.close()
+    conn.commit()
+
+
+def get_all_commands(conn, server_id):
+    cursor = conn.cursor()
+    send_query(cursor, """
+        SELECT command_id,command_string,entry_value FROM COMMAND_LIST
+        WHERE server_id=%s
+        ORDER BY 
+            command_string ASC,
+            command_id ASC;
+        
+    """,
+               (server_id,))
+    results = None
+    if cursor.rowcount > 0:
+        results = cursor.fetchall()
+    return results
+
+
+def get_all_responses_for_command(conn, server_id, command):
+    cursor = conn.cursor()
+    send_query(cursor, """
+        SELECT command_id,command_string,entry_value FROM COMMAND_LIST
+        WHERE server_id=%s
+            AND command_string = %s
+        ORDER BY 
+            command_string ASC,
+            command_id ASC; 
+    """,
+               (server_id, command))
+    results = None
+    if cursor.rowcount > 0:
+        results = cursor.fetchall()
+    return results
+
+
 def add_server(conn, server_id, timeout):
     if get_server_timeout(conn, server_id) >= 0:
         return
@@ -44,6 +100,11 @@ def add_server(conn, server_id, timeout):
                (server_id, timeout))
     cursor.close()
     conn.commit()
+
+
+def set_server_timeout(conn, server_id, timeout):
+    # todo implement set_server_timeout
+    return
 
 
 def get_server_timeout(conn, server_id):

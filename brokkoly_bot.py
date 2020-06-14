@@ -73,12 +73,18 @@ author_whitelist = [
 ]
 protected_commands = ["!help", "!add", "!estop", "!otherservers"]
 after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
+remove_regex_string = r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)'
 after_add_compiled_regex = re.compile(after_add_regex_string)
+remove_compiled_regex = re.compile(remove_regex_string)
 timeout = {
     mtg_legacy_discord_id: 60,
     brokkolys_bot_testing_zone_id: 5,
     madison_discord_id: 0
 }
+maintenance = {}
+
+
+# class BrokkolyBot(bot_ui_channel_id=None,protected_commands=None,):
 
 
 @client.event
@@ -87,11 +93,50 @@ async def on_message(message):
     This is where everything happens.
     """
     global command_map
+    global maintenance
     # Don't reply to our own messages
     if message.author.id in my_bots:
         return
     if not message.content.startswith("!"):
         return
+
+    if message.content.startswith("!maintenance") and message.guild and user_can_maintain(message.author,
+                                                                                          message.guild):
+        dm_channel = await message.author.create_dm()
+        maintenance[dm_channel.id] = {}
+        maintenance[dm_channel.id]['server_id'] = message.guild.id
+        maintenance[dm_channel.id]['command_map'] = {}
+
+        await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
+                              + "\n ADD COMMANDS HERE")
+        return
+
+    if message.channel.id in maintenance:
+        print("In maintenance mode")
+        content = message.content
+        if (content.startswith("!exit")):
+            maintenance.pop(message.channel.id)
+            print("Exited maintenance")
+            return
+        if (content.startswith("!role")):
+            print("Role Commands")
+            return
+        if (content.startswith("!add")):
+            await handle_add(message, maintenance[message.channel.id]['server_id'])
+            return
+        if (content.startswith("!remove")):
+            await handle_remove(message, maintenance[message.channel.id]['server_id'],
+                                maintenance[message.channel.id]['command_map'])
+            return
+        if (content.startswith("!list")):
+            await handle_list(message, maintenance[message.channel.id]['server_id'],
+                              maintenance[message.channel.id]['command_map'], show_message=True)
+            return
+        if (content.startswith("!timeout")):
+            print("Timeout Setting")
+            return
+        return
+
     if message.content.startswith("!estop") and message.author.id in author_whitelist:
         brokkoly = client.get_user(146687253370896385)
         brokkoly_dm = await brokkoly.create_dm()
@@ -174,17 +219,23 @@ async def on_ready():
     print('------')
 
 
-async def handle_add(message):
+async def handle_add(message, server_id=None):
     """add the value in message to the the command map"""
     global command_map
-    if message.author.id in author_whitelist:
+    if not server_id:
+        if message.guild:
+            server_id = message.guild.id
+        else:
+            await reject_message(message, "Error! Not in Maintenance Mode. Use !maintenance from a server")
+            return
+    if user_can_maintain(message.author, message.guild):
         if message.mentions or message.role_mentions or message.mention_everyone:
             await reject_message(message, "Error! No mentions allowed.")
             return
         result = parse_add(message.content)
-        if result[0]:
-            command = result[1]
-            new_entry = result[2]
+        if result:
+            command = result[0]
+            new_entry = result[1]
             if len(command) > 21:
                 await reject_message(message, "Error! Command cannot be longer than 20 characters.")
                 return
@@ -196,7 +247,7 @@ async def handle_add(message):
                 await reject_message(message, "Error! That is a protected command")
                 return
             # if add_to_map(command_map, command, new_entry):
-            if add_command(conn, message.guild.id, command, new_entry):
+            if add_command(conn, server_id, command, new_entry):
                 #    await add_quote_to_discord(command, new_entry)
                 await message.add_reaction(client.get_emoji(445805262880899075))
             return
@@ -205,6 +256,61 @@ async def handle_add(message):
             return
     else:
         await reject_message(message, "Error! Insufficient privileges to add.", True)
+
+
+async def handle_remove(message, server_id, command_map):
+    if len(command_map) == 0:
+        await handle_list(message, server_id, command_map)
+    result = parse_remove(message.content)
+    if not result:
+        # TODO add error message
+        await reject_message(message, "Error! incorrect remove format")
+        return
+    command = result[0]
+    message_number = result[1]
+    if message_number == "*":
+        remove_command(conn, server_id, command)
+    else:
+        message_number = int(message_number)
+        command_id = command_map[command][message_number][0]
+        if (command_id >= 0):
+            remove_command(conn, command_id=command_id)
+
+    return
+
+
+async def handle_list(message, server_id, command_map, show_message=False):
+    search_command = parse_list(message.content)
+    commands = None
+    command_map.clear()
+    if not search_command == "":
+        commands = get_all_responses_for_command(conn, server_id, search_command)
+    else:
+        commands = get_all_commands(conn, server_id)
+    response_message = ""
+    for command in commands:
+        # command[0]=command_id
+        # command[1]=command_string
+        # command[2]=entry_value
+        command_id = command[0]
+        command_string = command[1]
+        entry_value = command[2]
+        count = 0
+        if command_string in command_map:
+            count = len(command_map[command_string])
+        else:
+            command_map[command_string] = {}
+        command_map[command_string][count] = [command_id, entry_value]
+    print(command_map)
+    for command_string in command_map:
+        response_message = response_message + "!%s responses:\n" % (command_string)
+        for count in command_map[command_string]:
+            command_id = command_map[command_string][count][0]
+            entry_value = command_map[command_string][count][1]
+            response_message = response_message + "!%s %d %s\n" % (command_string, count, entry_value)
+        response_message = response_message + "\n"
+    if show_message:
+        await message.channel.send(response_message)
 
 
 async def reject_message(message, error, show_message=True):
@@ -221,9 +327,20 @@ def parse_add(content):
         first_space = string_to_parse.find(" ")
         command = string_to_parse[1:first_space]
         message = string_to_parse[first_space + 1:]
-        return [True, command, message]
+        return [command, message]
     else:
-        return [False]
+        return []
+
+
+def parse_remove(content):
+    string_to_parse = content[8:]
+    if re.fullmatch(remove_compiled_regex, string_to_parse):
+        first_space = string_to_parse.find(" ")
+        command = string_to_parse[:first_space]
+        message_number = string_to_parse[first_space + 1:]
+        return [command, message_number]
+    else:
+        return []
 
 
 def parse_search(content):
@@ -238,6 +355,11 @@ def parse_search(content):
     command = content[:first_space]
     to_search = content[first_space + 1:]
     return [command, to_search]
+
+
+def parse_list(content):
+    string_to_parse = content[6:]
+    return string_to_parse
 
 
 def find_in_command_map(command, to_search):
@@ -286,11 +408,15 @@ async def add_quote_to_discord(command, message):
     return
 
 
+def user_can_maintain(author, server):
+    return author.id in author_whitelist
+
+
 @atexit.register
 def shutting_down():
     # TODO Make this work?
     conn.close()
-    #await client.get_channel(bot_ui_channel_id).send("Shutting Down")
+    # await client.get_channel(bot_ui_channel_id).send("Shutting Down")
 
 
 client.run(TOKEN)
