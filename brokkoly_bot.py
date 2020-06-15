@@ -103,9 +103,7 @@ async def on_message(message):
     if message.content.startswith("!maintenance") and message.guild and user_can_maintain(message.author,
                                                                                           message.guild):
         dm_channel = await message.author.create_dm()
-        maintenance[dm_channel.id] = {}
-        maintenance[dm_channel.id]['server_id'] = message.guild.id
-        maintenance[dm_channel.id]['command_map'] = {}
+        maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, conn)
 
         await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
                               + "\n ADD COMMANDS HERE")
@@ -122,15 +120,13 @@ async def on_message(message):
             print("Role Commands")
             return
         if (content.startswith("!add")):
-            await handle_add(message, maintenance[message.channel.id]['server_id'])
+            await handle_add(message, maintenance[message.channel.id].server_id)
             return
         if (content.startswith("!remove")):
-            await handle_remove(message, maintenance[message.channel.id]['server_id'],
-                                maintenance[message.channel.id]['command_map'])
+            await handle_remove(message, maintenance[message.channel.id])
             return
         if (content.startswith("!list")):
-            await handle_list(message, maintenance[message.channel.id]['server_id'],
-                              maintenance[message.channel.id]['command_map'], show_message=True)
+            await handle_list(message, maintenance[message.channel.id], show_message=True)
             return
         if (content.startswith("!timeout")):
             print("Timeout Setting")
@@ -210,8 +206,8 @@ async def on_ready():
     """
     # global command_map
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
-    # command_map = await get_map_from_discord()
-    # convert_from_map(conn,command_map,timeout)
+    command_map = await get_map_from_discord()
+    convert_from_map(conn, command_map, timeout)
     await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
     print(client.user.name)
@@ -258,9 +254,7 @@ async def handle_add(message, server_id=None):
         await reject_message(message, "Error! Insufficient privileges to add.", True)
 
 
-async def handle_remove(message, server_id, command_map):
-    if len(command_map) == 0:
-        await handle_list(message, server_id, command_map)
+async def handle_remove(message, session):
     result = parse_remove(message.content)
     if not result:
         # TODO add error message
@@ -269,48 +263,34 @@ async def handle_remove(message, server_id, command_map):
     command = result[0]
     message_number = result[1]
     if message_number == "*":
-        remove_command(conn, server_id, command)
+        remove_command(session.conn, session, command)
     else:
         message_number = int(message_number)
-        command_id = command_map[command][message_number][0]
+        command_id = session.command_map[command][message_number][0]
         if (command_id >= 0):
-            remove_command(conn, command_id=command_id)
+            remove_command(session.conn, command_id=command_id)
 
     return
 
 
-async def handle_list(message, server_id, command_map, show_message=False):
+async def handle_list(message, session, show_message=False):
     search_command = parse_list(message.content)
     commands = None
-    command_map.clear()
-    if not search_command == "":
-        commands = get_all_responses_for_command(conn, server_id, search_command)
-    else:
-        commands = get_all_commands(conn, server_id)
+    session.load_command_map()
     response_message = ""
-    for command in commands:
-        # command[0]=command_id
-        # command[1]=command_string
-        # command[2]=entry_value
-        command_id = command[0]
-        command_string = command[1]
-        entry_value = command[2]
-        count = 0
-        if command_string in command_map:
-            count = len(command_map[command_string])
-        else:
-            command_map[command_string] = {}
-        command_map[command_string][count] = [command_id, entry_value]
-    print(command_map)
-    for command_string in command_map:
-        response_message = response_message + "!%s responses:\n" % (command_string)
-        for count in command_map[command_string]:
-            command_id = command_map[command_string][count][0]
-            entry_value = command_map[command_string][count][1]
-            response_message = response_message + "!%s %d %s\n" % (command_string, count, entry_value)
-        response_message = response_message + "\n"
+    for command_string in session.command_map:
+        response_message = response_message + "!%s responses:\n" % (command_string) \
+                           + get_command_response_lines(session.command_map, command_string) + "\n"
     if show_message:
         await message.channel.send(response_message)
+
+
+def get_command_response_lines(command_map, command_string):
+    response_message = ""
+    for count in command_map[command_string]:
+        entry_value = command_map[command_string][count][1]
+        response_message = response_message + "!%s %d %s\n" % (command_string, count, entry_value)
+    return response_message
 
 
 async def reject_message(message, error, show_message=True):
@@ -417,6 +397,30 @@ def shutting_down():
     # TODO Make this work?
     conn.close()
     # await client.get_channel(bot_ui_channel_id).send("Shutting Down")
+
+
+class MaintenanceSession():
+    command_map = {}
+
+    def __init__(self, server_id=None, channel=None, conn=None):
+        self.server_id = server_id
+        self.channel_id = channel
+        self.conn = conn
+        self.command_map = self.load_command_map()
+
+    def load_command_map(self):
+        self.command_map = {}
+        commands = get_all_commands(conn, self.server_id)
+        for command in commands:
+            command_id = command[0]
+            command_string = command[1]
+            entry_value = command[2]
+            count = 0
+            if command_string in self.command_map:
+                count = len(self.command_map[command_string])
+            else:
+                self.command_map[command_string] = {}
+            self.command_map[command_string][count] = [command_id, entry_value]
 
 
 client.run(TOKEN)
