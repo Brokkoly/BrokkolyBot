@@ -106,7 +106,7 @@ async def on_message(message):
         maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, conn)
 
         await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
-                              + "\n ADD COMMANDS HERE")
+                              + "\n!list <param coming soon>: List out the commands for the server and their ids")
         await message.add_reaction("📧")
         return
 
@@ -275,24 +275,37 @@ async def handle_remove(message, session):
     return
 
 
+async def handle_big_message(message, leftovers, new_line):
+    if (len(leftovers) + len(new_line) > 2000):
+        await message.channel.send(leftovers)
+        return new_line
+    else:
+        return leftovers + new_line
+
+
 async def handle_list(message, session, show_message=False):
     search_command = parse_list(message.content)
     commands = None
     session.load_command_map()
-    response_message = ""
+    leftovers = ""
     for command_string in session.command_map:
         if show_message:
-            await message.channel.send("!%s responses:\n" % (command_string))
-            await get_command_response_lines(session.command_map, command_string, message, show_message) + "\n"
+            # leftovers = await handle_big_message(message,leftovers,
+            await get_command_response_lines(session.command_map, command_string, message, show_message)
 
 
 async def get_command_response_lines(command_map, command_string, message, show_message):
     response_message = ""
+    leftovers = "!%s responses:\n" % (command_string)
     for count in command_map[command_string]:
         entry_value = command_map[command_string][count][1]
         if show_message:
-            await message.channel.send("!%s %d %s\n" % (command_string, count, entry_value))
-    return response_message
+            # await message.channel.send("!%s %d %s\n" % (command_string, count, entry_value))
+            # TODO do this so that embeds are nice
+            leftovers = await handle_big_message(message, leftovers,
+                                                 "!%s %d %s\n" % (command_string, count, entry_value))
+    if leftovers != "":
+        await message.channel.send(leftovers)
 
 
 async def reject_message(message, error, show_message=True):
