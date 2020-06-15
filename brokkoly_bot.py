@@ -281,17 +281,17 @@ async def handle_list(message, session, show_message=False):
     session.load_command_map()
     response_message = ""
     for command_string in session.command_map:
-        response_message = response_message + "!%s responses:\n" % (command_string) \
-                           + get_command_response_lines(session.command_map, command_string) + "\n"
-    if show_message:
-        await message.channel.send(response_message)
+        if show_message:
+            await message.channel.send("!%s responses:\n" % (command_string))
+            await get_command_response_lines(session.command_map, command_string, message, show_message) + "\n"
 
 
-def get_command_response_lines(command_map, command_string):
+async def get_command_response_lines(command_map, command_string, message, show_message):
     response_message = ""
     for count in command_map[command_string]:
         entry_value = command_map[command_string][count][1]
-        response_message = response_message + "!%s %d %s\n" % (command_string, count, entry_value)
+        if show_message:
+            await message.channel.send("!%s %d %s\n" % (command_string, count, entry_value))
     return response_message
 
 
