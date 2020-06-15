@@ -206,8 +206,8 @@ async def on_ready():
     """
     # global command_map
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
-    command_map = await get_map_from_discord()
-    convert_from_map(conn, command_map, timeout)
+    # command_map = await get_map_from_discord()
+    # convert_from_map(conn, command_map, timeout)
     await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
     print(client.user.name)
