@@ -106,7 +106,13 @@ async def on_message(message):
         maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, conn)
 
         await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
-                              + "\n!list <param coming soon>: List out the commands for the server and their ids")
+                              + "\n!list <search param coming soon>: List out the commands for the server and their ids"
+                              + "\n!remove <command (no !)> <command # from !list or * to remove all>"
+                              + "\n!roles Coming Soon!"
+                              + "\n!timeout Coming Soon!"
+                              + "\n!add !<command> <message>: Add a new command."
+                              + "\n!exit: Leave the maintenance session. You should do this when you're done."
+                              )
         await message.add_reaction("📧")
         return
 
@@ -161,6 +167,9 @@ async def on_message(message):
         user_dm_channel = await message.author.create_dm()
         await user_dm_channel.send(response)
         await message.add_reaction("📧")
+        return
+
+    if message.channel.type == discord.ChannelType.private:
         return
 
     if message.content.startswith("!add "):
