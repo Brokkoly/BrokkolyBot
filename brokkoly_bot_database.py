@@ -192,7 +192,7 @@ def drop_server_list(conn):
 
 
 def send_query(cur, command, args=None):
-    print(command)
+    # print(command)
     try:
         if (args):
             cur.execute(command, args)

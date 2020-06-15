@@ -107,10 +107,10 @@ async def on_message(message):
 
         await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
                               + "\n ADD COMMANDS HERE")
+        await message.add_reaction("📧")
         return
 
     if message.channel.id in maintenance:
-        print("In maintenance mode")
         content = message.content
         if (content.startswith("!exit")):
             maintenance.pop(message.channel.id)
@@ -263,12 +263,14 @@ async def handle_remove(message, session):
     command = result[0]
     message_number = result[1]
     if message_number == "*":
-        remove_command(session.conn, session, command)
+        remove_command(session.conn, session.server_id, command)
+        await message.add_reaction("🗑️")
     else:
         message_number = int(message_number)
         command_id = session.command_map[command][message_number][0]
         if (command_id >= 0):
             remove_command(session.conn, command_id=command_id)
+            await message.add_reaction("🗑️")
 
     return
 
