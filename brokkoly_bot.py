@@ -178,14 +178,8 @@ async def on_message(message):
 
     command = message.content.lower()[1:]
     command, to_search = parse_search(command)
-    # if command in command_map:
     msg = ""
-    # todo make search command
-    # if to_search != None:
-    #     msg = find_in_command_map(command, to_search)
-    # else:
-    #     msg = random.choice(command_map[command])
-    msg = get_message(conn, message.guild.id, command)
+    msg = get_message(conn, message.guild.id, command, to_search)
     if msg == "": return
     if message.guild.id in last_message_time \
             and message.guild.id in timeout \
