@@ -331,6 +331,11 @@ def parse_add(content):
 
 
 def parse_remove(content):
+    """
+    Parse a remove command
+    :param content: A string that starts with !remove
+    :return: an array holding the command and the message number to remove
+    """
     string_to_parse = content[8:]
     if re.fullmatch(remove_compiled_regex, string_to_parse):
         first_space = string_to_parse.find(" ")
