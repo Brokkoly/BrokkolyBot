@@ -7,14 +7,11 @@ import atexit
 import re
 import discord
 from importlib import util
-import os
-import psycopg2
 from brokkoly_bot_database import *
 
 TOKEN = None
 IS_TEST = False
 DATABASE_URL = None
-# conn = None
 bot_database_channel_ids = {
     "test": 718850472814968905,
     "prod": 718205785888260139
@@ -41,6 +38,7 @@ else:
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
+#client = discord.Client(status="Started Up")
 client = discord.Client()
 
 command_map = {}
@@ -178,7 +176,6 @@ async def on_message(message):
 
     command = message.content.lower()[1:]
     command, to_search = parse_search(command)
-    msg = ""
     msg = get_message(conn, message.guild.id, command, to_search)
     if msg == "": return
     if message.guild.id in last_message_time \
@@ -209,13 +206,23 @@ async def on_ready():
     """
     # global command_map
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
-    # command_map = await get_map_from_discord()
-    # convert_from_map(conn, command_map, timeout)
     await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
     print('------')
+
+@client.event
+async def on_guild_join(guild):
+    add_server(conn,guild.id,30)
+    return
+
+@client.event
+async def on_guild_remove(guild):
+    #remove_server(conn, guild.id)
+    return
+
+
 
 
 async def handle_add(message, server_id=None):
@@ -245,9 +252,7 @@ async def handle_add(message, server_id=None):
             if command in protected_commands:
                 await reject_message(message, "Error! That is a protected command")
                 return
-            # if add_to_map(command_map, command, new_entry):
             if add_command(conn, server_id, command, new_entry):
-                #    await add_quote_to_discord(command, new_entry)
                 await message.add_reaction(client.get_emoji(445805262880899075))
             return
         else:
@@ -419,7 +424,6 @@ def user_can_maintain(author, server):
 def shutting_down():
     # TODO Make this work?
     conn.close()
-    # await client.get_channel(bot_ui_channel_id).send("Shutting Down")
 
 
 class MaintenanceSession():

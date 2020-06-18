@@ -104,6 +104,10 @@ def add_server(conn, server_id, timeout):
 
 def set_server_timeout(conn, server_id, timeout):
     # todo implement set_server_timeout
+    cursor = conn.cursor()
+    send_query(cursor,
+               """
+               """)
     return
 
 
@@ -226,3 +230,6 @@ def convert_from_map(conn, command_map, timeout):
         for command in command_map:
             for entry in command_map[command]:
                 add_command(conn, server_id, command[1:], entry)
+
+
+
