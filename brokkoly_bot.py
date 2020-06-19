@@ -38,7 +38,7 @@ else:
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
-#client = discord.Client(status="Started Up")
+# client = discord.Client(status="Started Up")
 client = discord.Client()
 
 command_map = {}
@@ -155,13 +155,17 @@ async def on_message(message):
         response = "Available Commands:\n" \
                    "!help - You obviously know this\n" \
                    "!add - Add a new command. Syntax: !add !<command> <message>\n" \
+                   "!maintenance - Still In Beta. Use to modify database \n" \
                    "!otherservers - Display the link to the other servers spreadsheet.\n" \
                    "See my code: https://github.com/Brokkoly/BrokkolyBot\n" \
                    "Plus comments about the following subjects:"
-        for key in command_map:
+        commands = get_all_command_strings(conn, message.guild.id)
+        for key in commands:
+            key = key[0]
             if key == "!otherservers":
                 continue
-            response = response + "\n" + key
+            response = response + "\n!" + key
+
         user_dm_channel = await message.author.create_dm()
         await user_dm_channel.send(response)
         await message.add_reaction("📧")
@@ -212,17 +216,17 @@ async def on_ready():
     print(client.user.id)
     print('------')
 
+
 @client.event
 async def on_guild_join(guild):
-    add_server(conn,guild.id,30)
+    add_server(conn, guild.id, 30)
     return
+
 
 @client.event
 async def on_guild_remove(guild):
-    #remove_server(conn, guild.id)
+    # remove_server(conn, guild.id)
     return
-
-
 
 
 async def handle_add(message, server_id=None):
