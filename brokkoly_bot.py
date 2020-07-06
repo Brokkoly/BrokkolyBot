@@ -72,7 +72,7 @@ author_whitelist = [
 protected_commands = ["!help", "!add", "!estop", "!otherservers"]
 after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
 remove_regex_string = r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)'
-after_add_compiled_regex = re.compile(after_add_regex_string)
+after_add_compiled_regex = re.compile(after_add_regex_string, re.DOTALL)
 remove_compiled_regex = re.compile(remove_regex_string)
 timeout = {
     mtg_legacy_discord_id: 60,
