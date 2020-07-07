@@ -339,7 +339,6 @@ async def reject_message(message, error, show_message=True):
 
 def parse_timeout(content):
     string_to_parse = content[9:]
-    new_timeout = 0
     try:
         new_timeout = int(string_to_parse)
     except:
