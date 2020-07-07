@@ -74,11 +74,7 @@ after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already s
 remove_regex_string = r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)'
 after_add_compiled_regex = re.compile(after_add_regex_string, re.DOTALL)
 remove_compiled_regex = re.compile(remove_regex_string)
-timeout = {
-    mtg_legacy_discord_id: 60,
-    brokkolys_bot_testing_zone_id: 5,
-    madison_discord_id: 0
-}
+# timeout = {}
 maintenance = {}
 
 
@@ -98,8 +94,7 @@ async def on_message(message):
     if not message.content.startswith("!"):
         return
 
-    if message.content.startswith("!maintenance") and message.guild and user_can_maintain(message.author,
-                                                                                          message.guild):
+    if message.content.startswith("!maintenance") and message.guild and user_can_maintain(message):
         dm_channel = await message.author.create_dm()
         maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, conn)
 
@@ -107,7 +102,7 @@ async def on_message(message):
                               + "\n!list <search param coming soon>: List out the commands for the server and their ids"
                               + "\n!remove <command (no !)> <command # from !list or * to remove all>"
                               + "\n!roles Coming Soon!"
-                              + "\n!timeout Coming Soon!"
+                              + "\n!timeout <length> Set the timeout for the server."
                               + "\n!add !<command> <message>: Add a new command."
                               + "\n!exit: Leave the maintenance session. You should do this when you're done."
                               )
@@ -133,7 +128,7 @@ async def on_message(message):
             await handle_list(message, maintenance[message.channel.id], show_message=True)
             return
         if (content.startswith("!timeout")):
-            print("Timeout Setting")
+            await handle_timeout(message, maintenance[message.channel.id])
             return
         return
 
@@ -156,14 +151,13 @@ async def on_message(message):
                    "!help - You obviously know this\n" \
                    "!add - Add a new command. Syntax: !add !<command> <message>\n" \
                    "!maintenance - Still In Beta. Use to modify database \n" \
-                   "!otherservers - Display the link to the other servers spreadsheet.\n" \
                    "See my code: https://github.com/Brokkoly/BrokkolyBot\n" \
                    "Plus comments about the following subjects:"
         commands = get_all_command_strings(conn, message.guild.id)
         for key in commands:
             key = key[0]
-            if key == "!otherservers":
-                continue
+            # if key == "!otherservers":
+            #    continue
             response = response + "\n!" + key
 
         user_dm_channel = await message.author.create_dm()
@@ -182,15 +176,23 @@ async def on_message(message):
     command, to_search = parse_search(command)
     msg = get_message(conn, message.guild.id, command, to_search)
     if msg == "": return
-    if message.guild.id in last_message_time \
-            and message.guild.id in timeout \
-            and not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout[
-        message.guild.id]:
-        await message.add_reaction("⏳")
-        return
-    else:
-        last_message_time[message.guild.id] = message.created_at
-        await message.channel.send(msg)
+
+    if message.guild.id in last_message_time:
+        # todo split out this retrieval
+        # if not message.guild.id in timeout:
+        #     timeout_result = get_server_timeout(conn, message.guild.id)
+        #     if (timeout_result >= 0):
+        #         timeout[message.guild.id] = timeout_result
+        #     else:
+        #         timeout[message.guild.id] = 30
+        timeout_result = get_server_timeout(conn, message.guild.id)
+        timeout_result = 30 if timeout_result < 0 else timeout_result
+        if not (message.created_at - last_message_time[message.guild.id]).total_seconds() > timeout_result:
+            await message.add_reaction("⏳")
+            return
+
+    last_message_time[message.guild.id] = message.created_at
+    await message.channel.send(msg)
 
     '''
     if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
@@ -208,7 +210,6 @@ async def on_ready():
     """Fires once the discord bot is ready.
     Notify the test server that the bot has started
     """
-    # global command_map
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
     await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
@@ -226,6 +227,7 @@ async def on_guild_join(guild):
 @client.event
 async def on_guild_remove(guild):
     # remove_server(conn, guild.id)
+    # todo remove all entries for a server.
     return
 
 
@@ -238,7 +240,7 @@ async def handle_add(message, server_id=None):
         else:
             await reject_message(message, "Error! Not in Maintenance Mode. Use !maintenance from a server")
             return
-    if user_can_maintain(message.author, message.guild):
+    if user_can_maintain(message):
         if message.mentions or message.role_mentions or message.mention_everyone:
             await reject_message(message, "Error! No mentions allowed.")
             return
@@ -287,6 +289,14 @@ async def handle_remove(message, session):
     return
 
 
+async def handle_timeout(message, session):
+    parse_result = parse_timeout(message.content)
+    if (parse_result < 0):
+        await reject_message(message, "Error! Timeout value must be an integer >=0.")
+    else:
+        set_server_timeout(conn, session.server_id, parse_result)
+
+
 async def handle_big_message(message, leftovers, new_line):
     if (len(leftovers) + len(new_line) > 2000):
         await message.channel.send(leftovers)
@@ -325,6 +335,18 @@ async def reject_message(message, error, show_message=True):
     await message.add_reaction("❌")
     if show_message:
         await message.channel.send(error)
+
+
+def parse_timeout(content):
+    string_to_parse = content[9:]
+    new_timeout = 0
+    try:
+        new_timeout = int(string_to_parse)
+    except:
+        return -1
+    if (new_timeout >= 0):
+        return new_timeout
+    return -1
 
 
 def parse_add(content):
@@ -420,8 +442,12 @@ async def add_quote_to_discord(command, message):
     return
 
 
-def user_can_maintain(author, server):
-    return author.id in author_whitelist
+def user_can_maintain(message):
+    author = message.author
+    if author.id in author_whitelist:
+        return True
+    if (author.permissions_in(message.channel).manage_guild):
+        return True
 
 
 @atexit.register

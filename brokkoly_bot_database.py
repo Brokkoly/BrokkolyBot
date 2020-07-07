@@ -121,7 +121,10 @@ def set_server_timeout(conn, server_id, timeout):
     cursor = conn.cursor()
     send_query(cursor,
                """
-               """)
+               UPDATE SERVER_LIST
+               SET timeout_seconds = %s
+               WHERE SERVER_LIST.server_id=%s;
+               """, (timeout, server_id))
     return
 
 
@@ -133,7 +136,7 @@ def get_server_timeout(conn, server_id):
     cursor.close()
     if not result:
         return -1
-    print(result[0])
+    # print(result[0])
     return result[0]
 
 
@@ -181,7 +184,7 @@ def get_message(conn, server_id, command, to_search):
     cursor.close()
     if not message:
         return ""
-    print(message)
+    # print(message)
     return message[0]
 
 
