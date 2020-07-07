@@ -1,7 +1,3 @@
-# todo In chat maintenance of the string library
-# todo separate the commands by server. give yourself the ability to add commands to the master list
-# todo Use a database
-
 import random
 import atexit
 import re
@@ -212,6 +208,8 @@ async def on_ready():
     """
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
     await client.get_channel(bot_ui_channel_id).send("Online")
+    game = discord.Game("!help")
+    await client.change_presence(status=discord.Status.online, activity=game)
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -416,21 +414,6 @@ def add_to_map(command_map_to_add_to, command, message):
         return True
     else:
         return False
-
-
-async def get_map_from_discord():
-    """Load the map form the discord database channel"""
-    # TODO Use an actual database
-    new_command_map = {}
-    channel = client.get_channel(bot_database_channel_id)
-    messages = await channel.history(limit=1000).flatten()
-    for message in messages:
-        content = message.content
-        first_space = content.find(" ")
-        command = content[:first_space]
-        message = content[first_space + 1:]
-        add_to_map(new_command_map, command, message)
-    return new_command_map
 
 
 async def add_quote_to_discord(command, message):
