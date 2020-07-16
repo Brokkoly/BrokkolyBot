@@ -189,6 +189,15 @@ def create_tables(conn):
                """)
     conn.commit()
 
+#todo create table for timed out users
+#todo add timeout role column to SERVER_LIST
+
+#todo create command to retrieve users and their timeouts from timeout table
+#todo create command to add user to timeout table
+#todo create command to remove user from timeout table
+#todo create command to get users whose timeout has passed
+
+
 
 def drop_command_list(conn):
     cursor = conn.cursor()

@@ -8,6 +8,7 @@ import re
 import discord
 from importlib import util
 from brokkoly_bot_database import *
+import sched
 
 TOKEN = None
 IS_TEST = False
@@ -132,10 +133,29 @@ async def on_message(message):
         if (content.startswith("!list")):
             await handle_list(message, maintenance[message.channel.id], show_message=True)
             return
-        if (content.startswith("!timeout")):
-            print("Timeout Setting")
+        if (content.startswith("!cooldown")):
+            print("Cooldown Setting")
             return
         return
+
+    #if message.content.startswith("!timeoutusers") and user_can_maintain(message.author):
+    #    users_to_timeout = message.mentions
+        #todo
+        #todo
+        #timeout_time = parse_timeout(message)
+
+        #todo timeout_role_id = get_server_timeout_role_id()
+        #todo if(!timeout_role_id):
+        #       Create role for the server
+        #       Throw exception if permissions unavailable
+        #for user in users_to_timeout:
+
+
+
+        #store_user_timeout
+
+
+
 
     if message.content.startswith("!estop") and message.author.id in author_whitelist:
         brokkoly = client.get_user(146687253370896385)
@@ -407,6 +427,29 @@ async def get_map_from_discord():
         add_to_map(new_command_map, command, message)
     return new_command_map
 
+async def add_user_timeout(user, time_hours, server, role_id):
+    #todo add role to user
+    #todo enter into database
+
+    sched.enter(int(3600*time_hours), 1, remove_user_timeout, (user, server, role_id))
+    sched.run()
+    return
+
+async def remove_user_timeout(user, server, role_id):
+    #todo remove role from user
+    #todo remove from database
+    return
+
+
+async def check_for_removal():
+    #todo load timed out users and their servers from database
+    #todo
+
+    sched.enter(3600*5, 1, check_for_removal)
+    sched.run()
+    return
+
+#todo maybe just check for timed out users on startup
 
 async def add_quote_to_discord(command, message):
     """Sends a message to the discord database with the new entry"""
