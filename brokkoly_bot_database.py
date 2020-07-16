@@ -207,7 +207,30 @@ def create_tables(conn):
     conn.commit()
 
 #todo create table for timed out users
+def add_timed_out_users_table(conn):
+    send_query(conn,
+        """
+        CREATE TABLE TIMED_OUT_USERS (
+            timed_out_id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            server_id bigint NOT NULL,
+            user_id bigint NOT NULL,
+            timeout_end bigint NOT NULL
+        );
+        """)
+    conn.commit()
+    return
+    
 #todo add timeout role column to SERVER_LIST
+def add_timeout_role_column(conn):
+    send_query(conn,
+        """
+        ALTER TABLE SERVER_LIST
+        ADD COLUMN timeout_role_id bigint;
+        """)
+    conn.commit()
+
+
+
 
 #todo create command to retrieve users and their timeouts from timeout table
 #todo create command to add user to timeout table
