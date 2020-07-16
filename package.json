@@ -1,0 +1,26 @@
+{
+  "name": "brokkolybot",
+  "version": "1.0.0",
+  "description": "The last discord bot you'll ever need",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brokkoly/BrokkolyBot.git"
+  },
+  "keywords": [
+    "Brokkoly",
+    "Bot",
+    "Discord"
+  ],
+  "author": "Brendan Krull",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Brokkoly/BrokkolyBot/issues"
+  },
+  "homepage": "https://github.com/Brokkoly/BrokkolyBot#readme"
+}
