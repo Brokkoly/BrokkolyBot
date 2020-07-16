@@ -72,6 +72,20 @@ def get_all_commands(conn, server_id):
     return results
 
 
+def get_all_command_strings(conn, server_id):
+    cursor = conn.cursor()
+    send_query(cursor, """
+        SELECT DISTINCT command_string FROM COMMAND_LIST
+        WHERE server_id=%s
+        ORDER BY
+            command_string ASC;
+    """, (server_id,))
+    results = None
+    if cursor.rowcount > 0:
+        results = cursor.fetchall()
+    return results
+
+
 def get_all_responses_for_command(conn, server_id, command):
     cursor = conn.cursor()
     send_query(cursor, """
@@ -107,7 +121,10 @@ def set_server_timeout(conn, server_id, timeout):
     cursor = conn.cursor()
     send_query(cursor,
                """
-               """)
+               UPDATE SERVER_LIST
+               SET timeout_seconds = %s
+               WHERE SERVER_LIST.server_id=%s;
+               """, (timeout, server_id))
     return
 
 
@@ -119,7 +136,7 @@ def get_server_timeout(conn, server_id):
     cursor.close()
     if not result:
         return -1
-    print(result[0])
+    # print(result[0])
     return result[0]
 
 
@@ -167,7 +184,7 @@ def get_message(conn, server_id, command, to_search):
     cursor.close()
     if not message:
         return ""
-    print(message)
+    # print(message)
     return message[0]
 
 
@@ -239,6 +256,3 @@ def convert_from_map(conn, command_map, timeout):
         for command in command_map:
             for entry in command_map[command]:
                 add_command(conn, server_id, command[1:], entry)
-
-
-
