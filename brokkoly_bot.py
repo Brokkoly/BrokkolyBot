@@ -249,8 +249,8 @@ async def handle_add(message, server_id=None):
             if len(command) > 21:
                 await reject_message(message, "Error! Command cannot be longer than 20 characters.")
                 return
-            if len(new_entry) > 500:
-                await reject_message(message, "Error! Message cannot be longer than 500 characters.")
+            if len(new_entry) > 1000:
+                await reject_message(message, "Error! Message cannot be longer than 1000 characters.")
                 return
             command = command.lower()
             if command in protected_commands:
