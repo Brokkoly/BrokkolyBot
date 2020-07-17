@@ -9,6 +9,9 @@ import discord
 from importlib import util
 from brokkoly_bot_database import *
 import sched
+from datetime import datetime, timedelta
+from discord.ext import tasks
+import time
 
 TOKEN = None
 IS_TEST = False
@@ -39,7 +42,7 @@ else:
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
-#client = discord.Client(status="Started Up")
+# client = discord.Client(status="Started Up")
 client = discord.Client()
 
 command_map = {}
@@ -138,24 +141,22 @@ async def on_message(message):
             return
         return
 
-    #if message.content.startswith("!timeoutusers") and user_can_maintain(message.author):
-    #    users_to_timeout = message.mentions
-        #todo
-        #todo
-        #timeout_time = parse_timeout(message)
+    if message.content.startswith("!timeout") and user_can_maintain(message.author, message.guild):
+        timeout_until = message.created_at + timedelta(seconds=int(round(parse_timeout(message.content) * 3600)))
+        timeout_time = int(round(parse_timeout(message.content)))
+        timeout_role_id = await get_timeout_role(message.guild)
 
-        #todo timeout_role_id = get_server_timeout_role_id()
-        #todo if(!timeout_role_id):
-        #       Create role for the server
-        #       Throw exception if permissions unavailable
-        #for user in users_to_timeout:
+        for user in message.mentions:
+            await add_user_timeout(user, timeout_time, message.guild, timeout_role_id)
+        return
 
+    if message.content.startswith("!removetimeout") and user_can_maintain(message.author, message.guild):
+        timeout_role_id = await get_timeout_role(message.guild)
+        for user in message.mentions:
+            await remove_user_timeout(user, message.guild, timeout_role_id)
+        return
 
-
-        #store_user_timeout
-
-
-
+    # store_user_timeout
 
     if message.content.startswith("!estop") and message.author.id in author_whitelist:
         brokkoly = client.get_user(146687253370896385)
@@ -224,25 +225,27 @@ async def on_ready():
     """Fires once the discord bot is ready.
     Notify the test server that the bot has started
     """
-    # global command_map
+    # add_timed_out_users_table(conn)
+    # add_timeout_role_column(conn)
     await client.get_channel(bot_ui_channel_id).send("Starting Up")
     await client.get_channel(bot_ui_channel_id).send("Online")
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
     print('------')
+    check_users_to_remove.start()
+
 
 @client.event
 async def on_guild_join(guild):
-    add_server(conn,guild.id,30)
+    add_server(conn, guild.id, 30)
     return
+
 
 @client.event
 async def on_guild_remove(guild):
-    #remove_server(conn, guild.id)
+    # remove_server(conn, guild.id)
     return
-
-
 
 
 async def handle_add(message, server_id=None):
@@ -390,6 +393,15 @@ def parse_list(content):
     return string_to_parse
 
 
+def parse_timeout(content):
+    last_greater_than = content.rfind('>')
+    try:
+        time_in_hours = float(content[last_greater_than + 1:])
+    except:
+        return None
+    return time_in_hours
+
+
 def find_in_command_map(command, to_search):
     closest = ""
     closest_number = 10000000
@@ -427,29 +439,74 @@ async def get_map_from_discord():
         add_to_map(new_command_map, command, message)
     return new_command_map
 
-async def add_user_timeout(user, time_hours, server, role_id):
-    #todo add role to user
-    #todo enter into database
 
-    sched.enter(int(3600*time_hours), 1, remove_user_timeout, (user, server, role_id))
-    sched.run()
+async def add_user_timeout(user, timeout_time, server, role_id):
+    await user.add_roles(server.get_role(role_id), reason="Timing out user")
+    until_time_ms = int(round(datetime.utcnow().timestamp() * 1000)) + timeout_time * 1000
+    add_user_timeout_to_database(conn, server.id, user.id, until_time_ms)
+    # s = sched.scheduler()
+    # s.enter(timeout_time / 1000, 1, remove_user_timeout, (user, server, role_id))
+    # s.run()
     return
+
+
+class CheckUserLoop:
+    def __init__(self, connection, client):
+        self.conn = connection
+        self.client = client
+        self.check_users_to_remove.start()
+
+    @tasks.loop(minutes=1)
+    async def check_users_to_remove(self):
+        users_from_db = get_user_timeouts_finished(self.conn, int(round(datetime.utcnow().timestamp() * 1000)))
+        print("Checking for users to remove")
+        for user in users_from_db:
+            server_id = user[1]
+            server = await discord.guild(server_id)
+            user_id = user[2]
+            user = server.get_user(user_id)
+            role_id = get_timeout_role_for_server(conn, server_id)
+            await remove_user_timeout(user, server, role_id)
+
+
+@tasks.loop(minutes=1)
+async def check_users_to_remove():
+    users_from_db = get_user_timeouts_finished(conn, int(round(datetime.utcnow().timestamp() * 1000)))
+    print("Checking for users to remove")
+    for user_from_db in users_from_db:
+        server_id = user_from_db[0]
+        server = client.get_guild(server_id)
+        user_id = user_from_db[1]
+        user = server.get_member(user_id)
+        role_id = get_timeout_role_for_server(conn, server_id)
+        await remove_user_timeout(user, server, role_id)
+
 
 async def remove_user_timeout(user, server, role_id):
-    #todo remove role from user
-    #todo remove from database
+    role = server.get_role(role_id)
+    await user.remove_roles(role)
+    remove_user_timeout_from_database(conn, server.id, user.id)
+    print("Removed a timeout")
     return
 
 
-async def check_for_removal():
-    #todo load timed out users and their servers from database
-    #todo
+async def get_timeout_role(server):
+    role_id = get_timeout_role_for_server(conn, server.id)
+    if role_id and server.get_role(role_id):
+        return role_id
+    my_name = server.me.display_name
+    role = await server.create_role(name="%s's Timeout Role" % (my_name),
+                                    permissions=discord.Permissions(send_messages=False),
+                                    reason="Creating a role for timing out. Feel free to edit the name but please don't mess with the permissions.")
+    if (role):
+        role_id = role.id
+        add_timeout_role_for_server(conn, server.id, role_id)
+    else:
+        role_id = None
+    return role_id
 
-    sched.enter(3600*5, 1, check_for_removal)
-    sched.run()
-    return
 
-#todo maybe just check for timed out users on startup
+# todo finish checking for timed out users
 
 async def add_quote_to_discord(command, message):
     """Sends a message to the discord database with the new entry"""
@@ -494,3 +551,4 @@ class MaintenanceSession():
 
 
 client.run(TOKEN)
+CheckUserLoop(conn, client)
