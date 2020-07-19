@@ -288,6 +288,7 @@ class BrokkolyBotDatabase():
                         SELECT server_id,user_id,timeout_end FROM TIMED_OUT_USERS
                         WHERE timeout_end<=%s;
                         """, (current_time,))
+        results = None
         if cursor.rowcount > 0:
             results = cursor.fetchall()
         cursor.close()

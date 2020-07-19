@@ -157,8 +157,11 @@ class BrokkolyBot(discord.Client):
             return
 
         if message.content.startswith("!timeout") and self.user_can_maintain(message):
-            timeout_time = int(round(self.parse_timeout(message.content)))
-            timeout_role_id = await self.bot_database.get_timeout_role(message.guild)
+            parsed_timeout = self.parse_timeout(message.content)
+            if parsed_timeout <= 0:
+                return
+            timeout_time = int(round(parsed_timeout))
+            timeout_role_id = await self.get_timeout_role(message.guild)
 
             for user in message.mentions:
                 await self.add_user_timeout(user, timeout_time, message.guild, timeout_role_id)
@@ -238,7 +241,7 @@ class BrokkolyBot(discord.Client):
         print(self.user.name)
         print(self.user.id)
         print('------')
-        check_users_to_remove.start()
+        self.check_users_to_remove.start()
 
     @client.event
     async def on_guild_join(self, guild):
@@ -410,7 +413,7 @@ class BrokkolyBot(discord.Client):
         try:
             time_in_hours = float(content[last_greater_than + 1:])
         except:
-            return None
+            return 0
         return time_in_hours
 
     # def find_in_command_map(self,command, to_search):
@@ -503,13 +506,31 @@ class BrokkolyBot(discord.Client):
         else:
             self.bot_database.set_server_cooldown(session.server_id, parse_result)
 
+    @tasks.loop(minutes=1.0)
+    async def check_users_to_remove(self):
+        print("Checking for users to remove")
+        users_from_db = self.bot_database.get_user_timeouts_finished(int(round(datetime.utcnow().timestamp() * 1000)))
+        print("Got users_from_db")
+        if users_from_db:
+            for user in users_from_db:
+                server_id = user[0]
+                server = self.get_guild(server_id)
+                user_id = user[1]
+                user = server.get_member(user_id)
+                role_id = self.bot_database.get_timeout_role_for_server(server_id)
+                await self.remove_user_timeout(user, server, role_id)
+
+    # @check_users_to_remove.before_loop
+    # async def before_check_users(self):
+    #     await self.wait_until_ready()
+
 
 class CheckUserLoop:
     def __init__(self, bot):
         self.bot = bot
         self.check_users_to_remove.start()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=1.0)
     async def check_users_to_remove(self):
         users_from_db = self.bot.bot_database.get_user_timeouts_finished(
             int(round(datetime.utcnow().timestamp() * 1000)))
@@ -521,6 +542,10 @@ class CheckUserLoop:
             user = server.get_user(user_id)
             role_id = self.bot.bot_database.get_timeout_role_for_server(server_id)
             await self.bot.remove_user_timeout(user, server, role_id)
+
+    @check_users_to_remove.before_loop
+    async def before_check_users(self):
+        await self.bot.wait_until_ready()
 
 
 @tasks.loop(minutes=1)
@@ -567,4 +592,4 @@ class MaintenanceSession():
 
 
 running_bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
-CheckUserLoop(client)
+# CheckUserLoop(running_bot)
