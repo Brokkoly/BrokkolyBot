@@ -122,7 +122,7 @@ class BrokkolyBot(discord.Client):
                                   + "\n!list <search param coming soon>: List out the commands for the server and their ids"
                                   + "\n!remove <command (no !)> <command # from !list or * to remove all>"
                                   + "\n!roles Coming Soon!"
-                                  + "\n!timeout Coming Soon!"
+                                  + "\n!cooldown <integer> Set the message cooldown for the server"
                                   + "\n!add !<command> <message>: Add a new command."
                                   + "\n!exit: Leave the maintenance session. You should do this when you're done."
                                   )
@@ -151,7 +151,8 @@ class BrokkolyBot(discord.Client):
                 await self.handle_list(message, self.maintenance[message.channel.id], show_message=True)
                 return
             if (content.startswith("!cooldown")):
-                print("Cooldown Setting")
+                await self.handle_cooldown(message, self.maintenance[message.channel.id])
+
                 return
             return
 
@@ -387,6 +388,16 @@ class BrokkolyBot(discord.Client):
         else:
             return []
 
+    def parse_cooldown(self, content):
+        string_to_parse = content[9:]
+        try:
+            new_timeout = int(string_to_parse)
+        except:
+            return -1
+        if (new_timeout >= 0):
+            return new_timeout
+        return -1
+
     def parse_search(self, content):
         """parse the content to get the command and search string.
         The Search string may be ""
@@ -491,6 +502,13 @@ class BrokkolyBot(discord.Client):
     def user_can_maintain(self, author, server):
         return author.id in self.author_whitelist
 
+    async def handle_cooldown(self, message, session):
+        parse_result = self.parse_cooldown(message.content)
+        if (parse_result < 0):
+            await self.reject_message(message, "Error! Timeout value must be an integer >=0.")
+        else:
+            self.bot_database.set_server_timeout(session.server_id, parse_result)
+
 
 class CheckUserLoop:
     def __init__(self, bot):
@@ -522,9 +540,6 @@ async def check_users_to_remove():
     #     user = server.get_member(user_id)
     #     role_id = get_timeout_role_for_server(conn, server_id)
     #     await remove_user_timeout(user, server, role_id)
-
-
-
 
 
 @atexit.register
