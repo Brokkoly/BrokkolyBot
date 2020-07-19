@@ -103,20 +103,20 @@ class BrokkolyBotDatabase():
             results = cursor.fetchall()
         return results
 
-    def add_server(self, server_id, timeout):
+    def add_server(self, server_id, cooldown):
         # todo not sure about this
-        if self.get_server_timeout(server_id) >= 0:
+        if self.get_server_cooldown(server_id) >= 0:
             return
-        if timeout < 0:
-            timeout = 30
+        if cooldown < 0:
+            cooldown = 30
         cursor = self.conn.cursor()
         self.send_query(cursor,
                         """INSERT INTO SERVER_LIST (server_id, timeout_seconds) VALUES (%s, %s)""",
-                        (server_id, timeout))
+                        (server_id, cooldown))
         cursor.close()
         self.conn.commit()
 
-    def set_server_timeout(self, server_id, timeout):
+    def set_server_cooldown(self, server_id, cooldown):
         # todo implement set_server_timeout
         cursor = self.conn.cursor()
         self.send_query(cursor,
@@ -124,10 +124,10 @@ class BrokkolyBotDatabase():
                         UPDATE SERVER_LIST
                         SET timeout_seconds = %s
                         WHERE SERVER_LIST.server_id=%s;
-                        """, (timeout, server_id))
+                        """, (cooldown, server_id))
         return
 
-    def get_server_timeout(self, server_id):
+    def get_server_cooldown(self, server_id):
         cursor = self.conn.cursor()
         self.send_query(cursor, """
                 SELECT timeout_seconds FROM SERVER_LIST WHERE SERVER_LIST.server_id=%s""", (server_id,))

@@ -114,8 +114,7 @@ class BrokkolyBot(discord.Client):
         if not message.content.startswith("!"):
             return
 
-        if message.content.startswith("!maintenance") and message.guild and self.user_can_maintain(message.author,
-                                                                                                   message.guild):
+        if message.content.startswith("!maintenance") and message.guild and self.user_can_maintain(message):
             dm_channel = await message.author.create_dm()
             self.maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, self.bot_database)
 
@@ -157,7 +156,7 @@ class BrokkolyBot(discord.Client):
                 return
             return
 
-        if message.content.startswith("!timeout") and self.user_can_maintain(message.author, message.guild):
+        if message.content.startswith("!timeout") and self.user_can_maintain(message):
             timeout_time = int(round(self.parse_timeout(message.content)))
             timeout_role_id = await self.bot_database.get_timeout_role(message.guild)
 
@@ -165,7 +164,7 @@ class BrokkolyBot(discord.Client):
                 await self.add_user_timeout(user, timeout_time, message.guild, timeout_role_id)
             return
 
-        if message.content.startswith("!removetimeout") and self.user_can_maintain(message.author, message.guild):
+        if message.content.startswith("!removetimeout") and self.user_can_maintain(message):
             timeout_role_id = await self.get_timeout_role(message.guild)
             for user in message.mentions:
                 await self.remove_user_timeout(user, message.guild, timeout_role_id)
@@ -217,27 +216,14 @@ class BrokkolyBot(discord.Client):
 
         if message.guild.id in self.last_message_time:
             # todo split out this retrieval
-            # if not message.guild.id in timeout:
-            #     timeout_result = get_server_timeout(conn, message.guild.id)
-            #     if (timeout_result >= 0):
-            #         timeout[message.guild.id] = timeout_result
-            #     else:
-            #         timeout[message.guild.id] = 30
-            timeout_result = self.bot_database.get_server_timeout(message.guild.id)
-            timeout_result = 30 if timeout_result < 0 else timeout_result
-            if not (message.created_at - self.last_message_time[message.guild.id]).total_seconds() > timeout_result:
+            cooldown_result = self.bot_database.get_server_cooldown(message.guild.id)
+            cooldown_result = 30 if cooldown_result < 0 else cooldown_result
+            if not (message.created_at - self.last_message_time[message.guild.id]).total_seconds() > cooldown_result:
                 await message.add_reaction("⏳")
                 return
 
-        '''
-        if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
-            """If you're reading this go listen to game jazz, it's a good podcast"""
-            # TODO load random game type
-            # TODO load random game modifier
-            # TODO send great game idea
-            # TODO syntax and proper detection of plurals
-            return
-        '''
+        self.last_message_time[message.guild.id] = message.created_at
+        await message.channel.send(msg)
 
     @client.event
     async def on_ready(self):
@@ -283,7 +269,7 @@ class BrokkolyBot(discord.Client):
             else:
                 await self.reject_message(message, "Error! Not in Maintenance Mode. Use !maintenance from a server")
                 return
-        if self.user_can_maintain(message.author, message.guild):
+        if self.user_can_maintain(message):
             if message.mentions or message.role_mentions or message.mention_everyone:
                 await self.reject_message(message, "Error! No mentions allowed.")
                 return
@@ -503,15 +489,19 @@ class BrokkolyBot(discord.Client):
     #     await channel.send(save_message)
     #     return
 
-    def user_can_maintain(self, author, server):
-        return author.id in self.author_whitelist
+    def user_can_maintain(self, message):
+        author = message.author
+        if author.id in self.author_whitelist:
+            return True
+        if (author.permissions_in(message.channel).manage_guild):
+            return True
 
     async def handle_cooldown(self, message, session):
         parse_result = self.parse_cooldown(message.content)
         if (parse_result < 0):
             await self.reject_message(message, "Error! Timeout value must be an integer >=0.")
         else:
-            self.bot_database.set_server_timeout(session.server_id, parse_result)
+            self.bot_database.set_server_cooldown(session.server_id, parse_result)
 
 
 class CheckUserLoop:
