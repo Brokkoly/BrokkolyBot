@@ -46,7 +46,7 @@ conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 client = discord.Client()
 
 command_map = {}
-last_message_time = {}
+
 random.seed()
 brokkoly_bot_test_id = 449815971897671690
 brokkoly_bot_id = 225369871393882113
@@ -94,6 +94,7 @@ class BrokkolyBot(discord.Client):
         self.is_test = is_test
         self.timeout = {}
         self.maintenance = {}
+        self.last_message_time = {}
         self.initialize_regex()
         discord.Client.__init__(self)
         self.bot_database = BrokkolyBotDatabase(database_url)
@@ -157,8 +158,6 @@ class BrokkolyBot(discord.Client):
             return
 
         if message.content.startswith("!timeout") and self.user_can_maintain(message.author, message.guild):
-            timeout_until = message.created_at + timedelta(
-                seconds=int(round(self.parse_timeout(message.content) * 3600)))
             timeout_time = int(round(self.parse_timeout(message.content)))
             timeout_role_id = await self.bot_database.get_timeout_role(message.guild)
 
@@ -215,15 +214,20 @@ class BrokkolyBot(discord.Client):
         command, to_search = self.parse_search(command)
         msg = self.bot_database.get_message(message.guild.id, command, to_search)
         if msg == "": return
-        if message.guild.id in last_message_time \
-                and message.guild.id in self.timeout \
-                and not (message.created_at - last_message_time[message.guild.id]).total_seconds() > self.timeout[
-            message.guild.id]:
-            await message.add_reaction("⏳")
-            return
-        else:
-            last_message_time[message.guild.id] = message.created_at
-            await message.channel.send(msg)
+
+        if message.guild.id in self.last_message_time:
+            # todo split out this retrieval
+            # if not message.guild.id in timeout:
+            #     timeout_result = get_server_timeout(conn, message.guild.id)
+            #     if (timeout_result >= 0):
+            #         timeout[message.guild.id] = timeout_result
+            #     else:
+            #         timeout[message.guild.id] = 30
+            timeout_result = self.bot_database.get_server_timeout(message.guild.id)
+            timeout_result = 30 if timeout_result < 0 else timeout_result
+            if not (message.created_at - self.last_message_time[message.guild.id]).total_seconds() > timeout_result:
+                await message.add_reaction("⏳")
+                return
 
         '''
         if message.guild.id == game_jazz_id and message.content.startswith("!gamejazz"):
