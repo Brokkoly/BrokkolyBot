@@ -258,7 +258,7 @@ class BrokkolyBot(discord.Client):
     def initialize_regex(self):
         after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
         remove_regex_string = r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)'
-        self.after_add_compiled_regex = re.compile(after_add_regex_string)
+        self.after_add_compiled_regex = re.compile(after_add_regex_string, re.DOTALL)
         self.remove_compiled_regex = re.compile(remove_regex_string)
 
     # endregion initializers
