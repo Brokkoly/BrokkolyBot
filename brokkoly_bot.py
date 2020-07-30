@@ -242,6 +242,7 @@ class BrokkolyBot(discord.Client):
         print(self.user.id)
         print('------')
         self.check_users_to_remove.start()
+        await self.update_timeout_role_for_all_servers()
 
     @client.event
     async def on_guild_join(self, guild):
@@ -454,7 +455,7 @@ class BrokkolyBot(discord.Client):
 
     async def add_user_timeout(self, user, timeout_time, server, role_id):
         await user.add_roles(server.get_role(role_id), reason="Timing out user")
-        until_time_ms = int(round(datetime.utcnow().timestamp() * 1000)) + timeout_time * 1000
+        until_time_ms = int(round(datetime.utcnow().timestamp() * 1000)) + timeout_time * 1000 * 60
         self.bot_database.add_user_timeout_to_database(server.id, user.id, until_time_ms)
         # s = sched.scheduler()
         # s.enter(timeout_time / 1000, 1, remove_user_timeout, (user, server, role_id))
@@ -476,6 +477,9 @@ class BrokkolyBot(discord.Client):
         role = await server.create_role(name="%s's Timeout Role" % (my_name),
                                         permissions=discord.Permissions(send_messages=False),
                                         reason="Creating a role for timing out. Feel free to edit the name but please don't mess with the permissions.")
+        # TODO maybe initialize this separately or on startup so that new channels get properly set?
+        await self.update_timeout_role_for_server(server, role)
+
         if (role):
             role_id = role.id
             self.bot_database.add_timeout_role_for_server(server.id, role_id)
@@ -491,6 +495,24 @@ class BrokkolyBot(discord.Client):
     #     channel = client.get_channel(bot_database_channel_id)
     #     await channel.send(save_message)
     #     return
+
+    async def update_timeout_role_for_server(self, server, role=None):
+        if not role:
+            role = server.get_role(await self.get_timeout_role(server))
+        if not role:
+            return
+        for channel in server.text_channels:
+            if channel.permissions_for(server.get_member(self.user.id)).view_channel:
+                await channel.set_permissions(role, send_messages=False)
+        return
+
+    async def update_timeout_role_for_all_servers(self):
+        for server in self.guilds:
+            if not server.get_member(self.user.id).guild_permissions.manage_roles:
+                continue
+            role = server.get_role(await self.get_timeout_role(server))
+
+            await self.update_timeout_role_for_server(server, role)
 
     def user_can_maintain(self, message):
         author = message.author
