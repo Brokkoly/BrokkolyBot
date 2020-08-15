@@ -433,7 +433,7 @@ class BrokkolyBot(discord.Client):
     def get_emoji_ids(self, content):
         custom_emojis = re.findall(r'<a?:\w*:\d*>', content)
         custom_emojis = [self.get_emoji_tuple(e) for e in custom_emojis]
-        return custom_emojis
+        return list(dict.fromkeys(custom_emojis))
 
     async def get_content_from_message_url(self, message):
         url = re.findall(r'https:\/\/(?:canary\.)?discordapp\.com\/channels\/[0-9]+\/[0-9]+\/[0-9]+', message.content)
