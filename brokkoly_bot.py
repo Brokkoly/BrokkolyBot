@@ -193,7 +193,11 @@ class BrokkolyBot(discord.Client):
             quit()
 
         if message.content.startswith("!extractemoji"):
-            custom_emojis = self.get_emoji_ids(message.content)
+            url_content = await self.get_content_from_message_url(message)
+            if (url_content):
+                custom_emojis = self.get_emoji_ids(url_content)
+            else:
+                custom_emojis = self.get_emoji_ids(message.content)
             await self.send_emoji_urls(custom_emojis, message.channel)
             return
 
@@ -428,10 +432,34 @@ class BrokkolyBot(discord.Client):
 
     def get_emoji_ids(self, content):
         custom_emojis = re.findall(r'<a?:\w*:\d*>', content)
-        print(custom_emojis)
         custom_emojis = [self.get_emoji_tuple(e) for e in custom_emojis]
-        print(custom_emojis)
         return custom_emojis
+
+    async def get_content_from_message_url(self, message):
+        url = re.findall(r'https:\/\/(?:canary\.)?discordapp\.com\/channels\/[0-9]+\/[0-9]+\/[0-9]+', message.content)
+        if (not url) or (not url[0]):
+            return ""
+        parts = url[0].split('/')
+        try:
+            message_id = int(parts[-1])
+            channel_id = int(parts[-2])
+            guild_id = int(parts[-3])
+        except:
+            await message.channel.send("Invalid URL")
+            return
+        guild = await self.fetch_guild(guild_id)
+        if (not guild):
+            await message.channel.send("Sorry, I don't have access to the server that message is from.")
+            return ""
+        channel = await self.fetch_channel(channel_id)
+        if (not channel):
+            await message.channel.send("Sorry, I don't have access to the channel that message is from.")
+            return ""
+        other_message = await channel.fetch_message(message_id)
+        if (other_message and other_message.content):
+            return other_message.content
+        else:
+            return ""
 
     async def send_emoji_urls(self, emoji_ids, channel):
         url = "https://cdn.discordapp.com/emojis/{}.{}"
