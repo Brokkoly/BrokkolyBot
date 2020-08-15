@@ -79,7 +79,8 @@ game_jazz_id = 639124326385188864
 
 
 class BrokkolyBot(discord.Client):
-    protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout"]
+    protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout",
+                          "!extractemoji", "!extractanimatedemoji"]
     author_whitelist = [
         146687253370896385  # me
         , 115626912394510343  # ori
@@ -97,6 +98,7 @@ class BrokkolyBot(discord.Client):
         self.last_message_time = {}
         self.initialize_regex()
         discord.Client.__init__(self)
+        # discord.ext.commands.Bot.__init__(self,command_prefix="!",owner_id=146687253370896385)
         self.bot_database = BrokkolyBotDatabase(database_url)
         self.run(token)
 
@@ -176,6 +178,7 @@ class BrokkolyBot(discord.Client):
         # store_user_timeout
 
         if message.content.startswith("!estop") and message.author.id in self.author_whitelist:
+            # TODO Depreciate this part
             brokkoly = self.get_user(146687253370896385)
             brokkoly_dm = await brokkoly.create_dm()
             await brokkoly_dm.send("Emergency Stop Called. Send Help."
@@ -189,11 +192,17 @@ class BrokkolyBot(discord.Client):
                 "\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
             quit()
 
+        if message.content.startswith("!extractemoji"):
+            custom_emojis = self.get_emoji_ids(message.content)
+            await self.send_emoji_urls(custom_emojis, message.channel)
+            return
+
         if message.content.startswith("!help"):
             response = "Available Commands:\n" \
                        "!help - You obviously know this\n" \
                        "!add - Add a new command. Syntax: !add !<command> <message>\n" \
                        "!otherservers - Display the link to the other servers spreadsheet.\n" \
+                       "!extractemoji - Get the URL for the emojis in the rest of the message" \
                        "See my code: https://github.com/Brokkoly/BrokkolyBot\n" \
                        "Plus comments about the following subjects:"
             for key in command_map:
@@ -417,6 +426,18 @@ class BrokkolyBot(discord.Client):
             return 0
         return time_in_hours
 
+    def get_emoji_ids(self, content):
+        custom_emojis = re.findall(r'<a?:\w*:\d*>', content)
+        print(custom_emojis)
+        custom_emojis = [self.get_emoji_tuple(e) for e in custom_emojis]
+        print(custom_emojis)
+        return custom_emojis
+
+    async def send_emoji_urls(self, emoji_ids, channel):
+        url = "https://cdn.discordapp.com/emojis/{}.{}"
+        for e in emoji_ids:
+            await channel.send(url.format(str(e[1]), "gif" if e[0] else "png"))
+
     # def find_in_command_map(self,command, to_search):
     #     closest = ""
     #     closest_number = 10000000
@@ -527,6 +548,10 @@ class BrokkolyBot(discord.Client):
             await self.reject_message(message, "Error! Timeout value must be an integer >=0.")
         else:
             self.bot_database.set_server_cooldown(session.server_id, parse_result)
+
+    def get_emoji_tuple(self, raw_emoji):
+        parts = raw_emoji.split(':')
+        return (parts[0].replace('<', ''), parts[2].replace('>', ''))
 
     @tasks.loop(minutes=1.0)
     async def check_users_to_remove(self):
