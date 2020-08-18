@@ -193,11 +193,9 @@ class BrokkolyBot(discord.Client):
             quit()
 
         if message.content.startswith("!extractemoji"):
-            url_content = await self.get_content_from_message_url(message)
-            if (url_content):
-                custom_emojis = self.get_emoji_ids(url_content)
-            else:
-                custom_emojis = self.get_emoji_ids(message.content)
+            # url_content = await self.get_content_from_message_url(message)
+            message_from_url = await self.get_message_from_url(message)
+            custom_emojis = self.get_emoji_ids(message_from_url if message_from_url else message)
             await self.send_emoji_urls(custom_emojis, message.channel)
             return
 
@@ -430,10 +428,23 @@ class BrokkolyBot(discord.Client):
             return 0
         return time_in_hours
 
-    def get_emoji_ids(self, content):
+    def get_emoji_ids(self, message):
+        custom_emojis = self.get_emoji_ids_from_content(message.content)
+        custom_emojis = custom_emojis + self.get_emoji_ids_from_reactions(message)
+        return list(dict.fromkeys(custom_emojis))
+
+    def get_emoji_ids_from_reactions(self, message):
+        custom_emojis = []
+        for reaction in [r.emoji for r in message.reactions]:
+            if isinstance(reaction, str):
+                continue
+            custom_emojis.append((reaction.animated, reaction.id))
+        return custom_emojis
+
+    def get_emoji_ids_from_content(self, content):
         custom_emojis = re.findall(r'<a?:\w*:\d*>', content)
         custom_emojis = [self.get_emoji_tuple(e) for e in custom_emojis]
-        return list(dict.fromkeys(custom_emojis))
+        return custom_emojis
 
     async def get_content_from_message_url(self, message):
         url = re.findall(r'https:\/\/(?:canary\.)?discordapp\.com\/channels\/[0-9]+\/[0-9]+\/[0-9]+', message.content)
@@ -460,6 +471,32 @@ class BrokkolyBot(discord.Client):
             return other_message.content
         else:
             return ""
+
+    async def get_message_from_url(self, message):
+        url = re.findall(r'https:\/\/(?:canary\.)?discordapp\.com\/channels\/[0-9]+\/[0-9]+\/[0-9]+', message.content)
+        if (not url) or (not url[0]):
+            return ""
+        parts = url[0].split('/')
+        try:
+            message_id = int(parts[-1])
+            channel_id = int(parts[-2])
+            guild_id = int(parts[-3])
+        except:
+            await message.channel.send("Invalid URL")
+            return
+        guild = await self.fetch_guild(guild_id)
+        if (not guild):
+            await message.channel.send("Sorry, I don't have access to the server that message is from.")
+            return None
+        channel = await self.fetch_channel(channel_id)
+        if (not channel):
+            await message.channel.send("Sorry, I don't have access to the channel that message is from.")
+            return None
+        other_message = await channel.fetch_message(message_id)
+        if (other_message and other_message.content):
+            return other_message
+        else:
+            return None
 
     async def send_emoji_urls(self, emoji_ids, channel):
         url = "https://cdn.discordapp.com/emojis/{}.{}"
