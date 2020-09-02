@@ -253,6 +253,7 @@ class BrokkolyBot(discord.Client):
         print(self.user.id)
         print('------')
         self.check_users_to_remove.start()
+        await self.verify_server_details()
         await self.update_timeout_role_for_all_servers()
 
     @client.event
@@ -632,6 +633,18 @@ class BrokkolyBot(discord.Client):
                 role_id = self.bot_database.get_timeout_role_for_server(server_id)
                 await self.remove_user_timeout(user, server, role_id)
 
+    # @tasks.loop(minutes=5.0)
+    async def verify_server_details(self):
+        servers = self.bot_database.get_all_servers()
+        if not servers:
+            return
+        for server_id in servers:
+            server_id = server_id[0]
+            server = self.get_guild(server_id)
+            if not server: continue
+            server_name = server.name
+            server_icon_url = str(server.icon_url_as(static_format='png', size=64))
+            self.bot_database.set_server_details(server_id, server_name, server_icon_url)
     # @check_users_to_remove.before_loop
     # async def before_check_users(self):
     #     await self.wait_until_ready()
@@ -658,6 +671,23 @@ class CheckUserLoop:
     @check_users_to_remove.before_loop
     async def before_check_users(self):
         await self.bot.wait_until_ready()
+
+
+class VerifyServerDetailsLoop:
+    def __init__(self, bot):
+        self.bot = bot
+        self.verify_server_details.start()
+
+        @tasks.loop(minutes=5.0)
+        async def verify_server_details(self):
+            servers = self.bot_database.get_all_servers()
+            if not servers:
+                return
+            for server_id in servers:
+                server = await discord.guild(server_id)
+                server_name = server.name
+                server_icon_url = server.icon_url_as(static_format='png', size=64)
+                self.bot_database.set_server_details(server_id, server_name, server_icon_url)
 
 
 @tasks.loop(minutes=1)

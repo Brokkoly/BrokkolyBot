@@ -116,6 +116,30 @@ class BrokkolyBotDatabase():
         cursor.close()
         self.conn.commit()
 
+    def get_all_servers(self):
+        cursor = self.conn.cursor()
+        self.send_query(cursor,
+                        """
+                        SELECT server_id FROM SERVER_LIST;
+                        """)
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchall()
+        cursor.close()
+        return results
+
+    def set_server_details(self, server_id, server_name="", server_url=""):
+        cursor = self.conn.cursor()
+        self.send_query(cursor,
+                        """
+                        UPDATE SERVER_LIST
+                        SET name = %s,
+                            icon_url_64 = %s
+                        WHERE server_id = %s;
+                        """, (server_name, server_url, server_id))
+        cursor.close()
+        self.conn.commit()
+
     def set_server_cooldown(self, server_id, cooldown):
         # todo implement set_server_timeout
         cursor = self.conn.cursor()
@@ -125,6 +149,8 @@ class BrokkolyBotDatabase():
                         SET timeout_seconds = %s
                         WHERE SERVER_LIST.server_id=%s;
                         """, (cooldown, server_id))
+        cursor.close()
+        self.conn.commit()
         return
 
     def get_server_cooldown(self, server_id):
@@ -167,8 +193,8 @@ class BrokkolyBotDatabase():
             query = """
                     SELECT entry_value
                     FROM COMMAND_LIST
-                    WHERE server_id = %s
-                        AND command_string = %s
+                    WHERE server_id=%s
+                        AND command_string=%s
                     ORDER BY RANDOM()
                     LIMIT 1;
                     """
@@ -198,6 +224,13 @@ class BrokkolyBotDatabase():
                         );
                         CREATE INDEX command_index
                         ON COMMAND_LIST(server_id,command_string);
+                        
+                        CREATE TABLE TIMED_OUT_USERS (
+                            timed_out_id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                            server_id bigint NOT NULL,
+                            user_id bigint NOT NULL,
+                            timeout_end bigint NOT NULL
+                        );
                         """)
         cursor.close()
         self.conn.commit()
@@ -216,6 +249,16 @@ class BrokkolyBotDatabase():
         cursor.close()
         self.conn.commit()
         return
+
+    def add_server_details_columns(self):
+        cursor = self.conn.cursor()
+        self.send_query(cursor,
+                        """
+                        ALTER TABLE SERVER_LIST
+                        ADD COLUMN icon_url_64 VARCHAR(500),
+                        ADD COLUMN name VARCHAR(1000);
+                        """)
+        cursor.close()
 
     def get_timeout_role_for_server(self, server_id):
         cursor = self.conn.cursor()
