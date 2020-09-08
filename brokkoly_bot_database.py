@@ -25,14 +25,14 @@ class BrokkolyBotDatabase():
                 AND command_string = %s
                 AND entry_value = %s;
                 ;""",
-                        (server_id, command, message))
+                        (str(server_id), command, message))
         if (cursor.rowcount > 0):
             print("That command already exists!\n", "Count=%d" % (cursor.rowcount))
             cursor.close()
             return False
         self.send_query(cursor,
                         """ INSERT INTO COMMAND_LIST (server_id, command_string, entry_value) VALUES (%s,%s,%s)""",
-                        (server_id, command, message))
+                        (str(server_id), command, message))
         cursor.close()
         self.conn.commit()
         return True
@@ -51,7 +51,7 @@ class BrokkolyBotDatabase():
             WHERE server_id = %s
                 AND command_string = %s
             """
-            params = (server_id, command)
+            params = (str(server_id), command)
         self.send_query(cursor, query, params)
         cursor.close()
         self.conn.commit()
@@ -66,7 +66,7 @@ class BrokkolyBotDatabase():
                 command_id ASC;
             
         """,
-                        (server_id,))
+                        (str(server_id),))
         results = None
         if cursor.rowcount > 0:
             results = cursor.fetchall()
@@ -80,7 +80,7 @@ class BrokkolyBotDatabase():
             WHERE server_id=%s
             ORDER BY
                 command_string ASC;
-        """, (server_id,))
+        """, (str(server_id),))
         results = None
         if cursor.rowcount > 0:
             results = cursor.fetchall()
@@ -97,7 +97,7 @@ class BrokkolyBotDatabase():
                 command_string ASC,
                 command_id ASC; 
         """,
-                        (server_id, command))
+                        (str(server_id), command))
         results = None
         if cursor.rowcount > 0:
             results = cursor.fetchall()
@@ -105,6 +105,7 @@ class BrokkolyBotDatabase():
 
     def add_server(self, server_id, cooldown):
         # todo not sure about this
+        server_id = str(server_id)
         if self.get_server_cooldown(server_id) >= 0:
             return
         if cooldown < 0:
@@ -136,7 +137,7 @@ class BrokkolyBotDatabase():
                         SET name = %s,
                             icon_url_64 = %s
                         WHERE server_id = %s;
-                        """, (server_name, server_url, server_id))
+                        """, (server_name, server_url, str(server_id)))
         cursor.close()
         self.conn.commit()
 
@@ -148,7 +149,7 @@ class BrokkolyBotDatabase():
                         UPDATE SERVER_LIST
                         SET timeout_seconds = %s
                         WHERE SERVER_LIST.server_id=%s;
-                        """, (cooldown, server_id))
+                        """, (cooldown, str(server_id)))
         cursor.close()
         self.conn.commit()
         return
@@ -156,7 +157,7 @@ class BrokkolyBotDatabase():
     def get_server_cooldown(self, server_id):
         cursor = self.conn.cursor()
         self.send_query(cursor, """
-                SELECT timeout_seconds FROM SERVER_LIST WHERE SERVER_LIST.server_id=%s""", (server_id,))
+                SELECT timeout_seconds FROM SERVER_LIST WHERE SERVER_LIST.server_id=%s""", (str(server_id),))
         result = cursor.fetchone()
         cursor.close()
         if not result:
@@ -188,7 +189,7 @@ class BrokkolyBotDatabase():
             ORDER BY RANDOM()
             LIMIT 1;
             """
-            params = (server_id, command, "%%" + to_search + "%%")
+            params = (str(server_id), command, "%%" + to_search + "%%")
         else:
             query = """
                     SELECT entry_value
@@ -198,7 +199,7 @@ class BrokkolyBotDatabase():
                     ORDER BY RANDOM()
                     LIMIT 1;
                     """
-            params = (server_id, command)
+            params = (str(server_id), command)
 
         self.send_query(cursor, query, params)
         message = cursor.fetchone()
@@ -213,12 +214,12 @@ class BrokkolyBotDatabase():
         self.send_query(cursor,
                         """
                         CREATE TABLE SERVER_LIST (
-                            server_id bigint PRIMARY KEY,
+                            server_id VARCHAR PRIMARY KEY,
                             timeout_seconds int
                         );
                         CREATE TABLE COMMAND_LIST (
                             command_id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                            server_id bigint,
+                            server_id VARCHAR,
                             command_string varchar(50) NOT NULL,
                             entry_value varchar(1000) NOT NULL
                         );
@@ -227,7 +228,7 @@ class BrokkolyBotDatabase():
                         
                         CREATE TABLE TIMED_OUT_USERS (
                             timed_out_id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                            server_id bigint NOT NULL,
+                            server_id VARCHAR NOT NULL,
                             user_id bigint NOT NULL,
                             timeout_end bigint NOT NULL
                         );
@@ -262,11 +263,13 @@ class BrokkolyBotDatabase():
 
     def get_timeout_role_for_server(self, server_id):
         cursor = self.conn.cursor()
+        server_id = str(server_id)
         self.send_query(cursor,
                         """
                         SELECT timeout_role_id from SERVER_LIST
                         WHERE server_id=%s;  
                         """, (server_id,))
+        results = None
         if cursor.rowcount > 0:
             results = cursor.fetchone()
         cursor.close()
@@ -279,7 +282,7 @@ class BrokkolyBotDatabase():
                         UPDATE SERVER_LIST
                         SET timeout_role_id=%s
                         WHERE server_id=%s;  
-                        """, (role_id, server_id))
+                        """, (role_id, str(server_id)))
         cursor.close()
         self.conn.commit()
 
@@ -309,7 +312,7 @@ class BrokkolyBotDatabase():
         self.send_query(cursor,
                         """
                         INSERT INTO TIMED_OUT_USERS (server_id, user_id, timeout_end) VALUES (%s, %s, %s);
-                        """, (server_id, user_id, until_time))
+                        """, (str(server_id), user_id, until_time))
         cursor.close()
         self.conn.commit()
 
@@ -320,7 +323,7 @@ class BrokkolyBotDatabase():
                         DELETE FROM TIMED_OUT_USERS
                         WHERE server_id=%s
                         AND user_id=%s;
-                        """, (server_id, user_id))
+                        """, (str(server_id), user_id))
         cursor.close()
         self.conn.commit()
 
