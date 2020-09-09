@@ -206,6 +206,7 @@ class BrokkolyBot(discord.Client):
                        "!otherservers - Display the link to the other servers spreadsheet.\n" \
                        "!extractemoji - Get the URL for the emojis in the rest of the message" \
                        "See my code: https://github.com/Brokkoly/BrokkolyBot\n" \
+                       "             https://github.com/Brokkoly/BrokkolyBotFrontend\n" \
                        "Plus comments about the following subjects:"
             for key in command_map:
                 if key == "!otherservers":
