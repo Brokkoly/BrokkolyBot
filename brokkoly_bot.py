@@ -203,15 +203,13 @@ class BrokkolyBot(discord.Client):
             response = "Available Commands:\n" \
                        "!help - You obviously know this\n" \
                        "!add - Add a new command. Syntax: !add !<command> <message>\n" \
-                       "!otherservers - Display the link to the other servers spreadsheet.\n" \
-                       "!extractemoji - Get the URL for the emojis in the rest of the message" \
-                       "See my code: https://github.com/Brokkoly/BrokkolyBot\n" \
-                       "             https://github.com/Brokkoly/BrokkolyBotFrontend\n" \
+                       "!extractemoji - Get the URL for the emojis in the rest of the message\n" \
+                       "See my code: <https://github.com/Brokkoly/BrokkolyBot>\n" \
+                       "             <https://github.com/Brokkoly/BrokkolyBotFrontend>\n" \
                        "Plus comments about the following subjects:"
-            for key in command_map:
-                if key == "!otherservers":
-                    continue
-                response = response + "\n" + key
+
+            for command in self.bot_database.get_all_command_strings(message.guild.id):
+                response = response + "\n" + "!" + command[0]
             user_dm_channel = await message.author.create_dm()
             await user_dm_channel.send(response)
             await message.add_reaction("📧")
