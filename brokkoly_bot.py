@@ -1,17 +1,12 @@
-# todo In chat maintenance of the string library
-# todo separate the commands by server. give yourself the ability to add commands to the master list
-# todo Use a database
-
 import random
 import atexit
 import re
 import discord
 from importlib import util
 from brokkoly_bot_database import *
-import sched
-from datetime import datetime, timedelta
+from datetime import datetime
 from discord.ext import tasks
-import time
+import os
 
 TOKEN = None
 IS_TEST = False
@@ -57,7 +52,7 @@ brokkolys_bot_testing_zone_id = 225374061386006528
 madison_discord_id = 368078887361708033
 # bot_database_channel_id = None
 bot_ui_channel_id = None
-if (IS_TEST):
+if IS_TEST:
     # bot_database_channel_id = bot_database_channel_ids["test"]
     bot_ui_channel_id = bot_test_channel_ids["test"]
 else:
@@ -80,7 +75,7 @@ game_jazz_id = 639124326385188864
 
 class BrokkolyBot(discord.Client):
     protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout",
-                          "!extractemoji", "!extractanimatedemoji"]
+                          "!extractemoji"]
     author_whitelist = [
         146687253370896385  # me
         , 115626912394510343  # ori
@@ -206,7 +201,8 @@ class BrokkolyBot(discord.Client):
                        "!extractemoji - Get the URL for the emojis in the rest of the message\n" \
                        "See my code: <https://github.com/Brokkoly/BrokkolyBot>\n" \
                        "             <https://github.com/Brokkoly/BrokkolyBotFrontend>\n" \
-                       "Plus comments about the following subjects:"
+                       "To see all commands and responses,please go to https://brokkolybot.azurewebsites.net\n" \
+                       "Plus the following commands: "
 
             for command in self.bot_database.get_all_command_strings(message.guild.id):
                 response = response + "\n" + "!" + command[0]
@@ -252,7 +248,6 @@ class BrokkolyBot(discord.Client):
         print(self.user.id)
         print('------')
         self.check_users_to_remove.start()
-        await self.verify_server_details()
         await self.update_timeout_role_for_all_servers()
 
     @client.event
@@ -292,7 +287,7 @@ class BrokkolyBot(discord.Client):
             if result:
                 command = result[0]
                 new_entry = result[1]
-                if len(command) > 21:
+                if len(command) >= 21:
                     await self.reject_message(message, "Error! Command cannot be longer than 20 characters.")
                     return
                 if len(new_entry) > 500:
@@ -633,17 +628,17 @@ class BrokkolyBot(discord.Client):
                 await self.remove_user_timeout(user, server, role_id)
 
     # @tasks.loop(minutes=5.0)
-    async def verify_server_details(self):
-        servers = self.bot_database.get_all_servers()
-        if not servers:
-            return
-        for server_id in servers:
-            server_id = server_id[0]
-            server = self.get_guild(server_id)
-            if not server: continue
-            server_name = server.name
-            server_icon_url = str(server.icon_url_as(static_format='png', size=64))
-            self.bot_database.set_server_details(server_id, server_name, server_icon_url)
+    # async def verify_server_details(self):
+    #     servers = self.bot_database.get_all_servers()
+    #     if not servers:
+    #         return
+    #     for server_id in servers:
+    #         server_id = server_id[0]
+    #         server = self.get_guild(server_id)
+    #         if not server: continue
+    #         server_name = server.name
+    #         server_icon_url = str(server.icon_url_as(static_format='png', size=64))
+    #         self.bot_database.set_server_details(server_id, server_name, server_icon_url)
     # @check_users_to_remove.before_loop
     # async def before_check_users(self):
     #     await self.wait_until_ready()
@@ -672,21 +667,21 @@ class CheckUserLoop:
         await self.bot.wait_until_ready()
 
 
-class VerifyServerDetailsLoop:
-    def __init__(self, bot):
-        self.bot = bot
-        self.verify_server_details.start()
-
-        @tasks.loop(minutes=5.0)
-        async def verify_server_details(self):
-            servers = self.bot_database.get_all_servers()
-            if not servers:
-                return
-            for server_id in servers:
-                server = await discord.guild(server_id)
-                server_name = server.name
-                server_icon_url = server.icon_url_as(static_format='png', size=64)
-                self.bot_database.set_server_details(server_id, server_name, server_icon_url)
+# class VerifyServerDetailsLoop:
+#     def __init__(self, bot):
+#         self.bot = bot
+#         self.verify_server_details.start()
+#
+#         @tasks.loop(minutes=5.0)
+#         async def verify_server_details(self):
+#             servers = self.bot_database.get_all_servers()
+#             if not servers:
+#                 return
+#             for server_id in servers:
+#                 server = await discord.guild(server_id)
+#                 server_name = server.name
+#                 server_icon_url = server.icon_url_as(static_format='png', size=64)
+#                 self.bot_database.set_server_details(server_id, server_name, server_icon_url)
 
 
 @tasks.loop(minutes=1)

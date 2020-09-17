@@ -2,17 +2,15 @@
 
 
 import psycopg2
-import os
 
 
-class BrokkolyBotDatabase():
+class BrokkolyBotDatabase:
     def __init__(self, database_url):
         self.conn = psycopg2.connect(database_url, sslmode='require')
 
     def add_command(self, server_id, command, message):
         """
         Adds a new command to the bot
-        :param conn:
         :param server_id:
         :param command:
         :param message:
@@ -26,8 +24,8 @@ class BrokkolyBotDatabase():
                 AND entry_value = %s;
                 ;""",
                         (str(server_id), command, message))
-        if (cursor.rowcount > 0):
-            print("That command already exists!\n", "Count=%d" % (cursor.rowcount))
+        if cursor.rowcount > 0:
+            print("That command already exists!\n", "Count=%d" % cursor.rowcount)
             cursor.close()
             return False
         self.send_query(cursor,
@@ -39,7 +37,7 @@ class BrokkolyBotDatabase():
 
     def remove_command(self, server_id=None, command="", command_id=None):
         cursor = self.conn.cursor()
-        if (command_id):
+        if command_id:
             query = """
             DELETE FROM COMMAND_LIST
             WHERE command_id = %s;
@@ -129,17 +127,17 @@ class BrokkolyBotDatabase():
         cursor.close()
         return results
 
-    def set_server_details(self, server_id, server_name="", server_url=""):
-        cursor = self.conn.cursor()
-        self.send_query(cursor,
-                        """
-                        UPDATE SERVER_LIST
-                        SET name = %s,
-                            icon_url_64 = %s
-                        WHERE server_id = %s;
-                        """, (server_name, server_url, str(server_id)))
-        cursor.close()
-        self.conn.commit()
+    # def set_server_details(self, server_id, server_name="", server_url=""):
+    #     cursor = self.conn.cursor()
+    #     self.send_query(cursor,
+    #                     """
+    #                     UPDATE SERVER_LIST
+    #                     SET name = %s,
+    #                         icon_url_64 = %s
+    #                     WHERE server_id = %s;
+    #                     """, (server_name, server_url, str(server_id)))
+    #     cursor.close()
+    #     self.conn.commit()
 
     def set_server_cooldown(self, server_id, cooldown):
         # todo implement set_server_timeout
@@ -173,9 +171,9 @@ class BrokkolyBotDatabase():
 
     def get_message(self, server_id, command, to_search):
         """
-        :param conn:
         :param server_id:
         :param command:
+        :param to_search:
         :return:
         """
         cursor = self.conn.cursor()
@@ -251,15 +249,28 @@ class BrokkolyBotDatabase():
         self.conn.commit()
         return
 
-    def add_server_details_columns(self):
+    # def add_server_details_columns(self):
+    #     cursor = self.conn.cursor()
+    #     self.send_query(cursor,
+    #                     """
+    #                     ALTER TABLE SERVER_LIST
+    #                     ADD COLUMN icon_url_64 VARCHAR(500),
+    #                     ADD COLUMN name VARCHAR(1000);
+    #                     """)
+    #     cursor.close()
+    def get_manager_role_for_server(self, server_id):
         cursor = self.conn.cursor()
+        server_id = str(server_id)
         self.send_query(cursor,
                         """
-                        ALTER TABLE SERVER_LIST
-                        ADD COLUMN icon_url_64 VARCHAR(500),
-                        ADD COLUMN name VARCHAR(1000);
-                        """)
+                        SELECT bot_manager_role_id from SERVER_LIST
+                        WHERE server_id=%s;  
+                        """, (server_id,))
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchone()
         cursor.close()
+        return results[0]
 
     def get_timeout_role_for_server(self, server_id):
         cursor = self.conn.cursor()
@@ -302,6 +313,7 @@ class BrokkolyBotDatabase():
                         """
                         SELECT server_id,user_id,timeout_end FROM TIMED_OUT_USERS;
                         """)
+        results = None
         if cursor.rowcount > 0:
             results = cursor.fetchall()
         cursor.close()
@@ -363,7 +375,7 @@ class BrokkolyBotDatabase():
     def send_query(self, cur, command, args=None):
         # print(command)
         try:
-            if (args):
+            if args:
                 cur.execute(command, args)
             else:
                 cur.execute(command)
