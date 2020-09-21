@@ -76,14 +76,15 @@ game_jazz_id = 639124326385188864
 class BrokkolyBot(discord.Client):
     protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout",
                           "!extractemoji"]
-    author_whitelist = [
-        146687253370896385  # me
-        , 115626912394510343  # ori
-        , 200773608094564352  # wind
-        , 115602332863037443  # thaya
-        , 185287142388400129  # thalia
-        , 120756475768471554  # solyra
-    ]
+
+    # author_whitelist = [
+    #     146687253370896385  # me
+    #     , 115626912394510343  # ori
+    #     #, 200773608094564352  # wind
+    #     , 115602332863037443  # thaya
+    #     , 185287142388400129  # thalia
+    #     , 120756475768471554  # solyra
+    # ]
 
     def __init__(self, is_test=False, token=None, database_url=None):
         self.token = token
@@ -597,10 +598,21 @@ class BrokkolyBot(discord.Client):
 
     def user_can_maintain(self, message):
         author = message.author
-        if author.id in self.author_whitelist:
-            return True
+        # if author.id in self.author_whitelist:
+        #    return True
         if (author.permissions_in(message.channel).manage_guild):
             return True
+        if (self.user_has_bot_manager_role(author, message.guild.id)):
+            return True
+
+    def user_has_bot_manager_role(self, author, server_id):
+        bot_manager_role_id = self.bot_database.get_manager_role_for_server(server_id)
+        if not bot_manager_role_id:
+            return False
+        for role in author.roles:
+            if str(role.id) == bot_manager_role_id:
+                return True
+        return False
 
     async def handle_cooldown(self, message, session):
         parse_result = self.parse_cooldown(message.content)
