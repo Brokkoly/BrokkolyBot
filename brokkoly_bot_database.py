@@ -249,15 +249,6 @@ class BrokkolyBotDatabase:
         self.conn.commit()
         return
 
-    # def add_server_details_columns(self):
-    #     cursor = self.conn.cursor()
-    #     self.send_query(cursor,
-    #                     """
-    #                     ALTER TABLE SERVER_LIST
-    #                     ADD COLUMN icon_url_64 VARCHAR(500),
-    #                     ADD COLUMN name VARCHAR(1000);
-    #                     """)
-    #     cursor.close()
     def get_manager_role_for_server(self, server_id):
         cursor = self.conn.cursor()
         server_id = str(server_id)

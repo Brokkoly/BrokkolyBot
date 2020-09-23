@@ -37,7 +37,6 @@ else:
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
-# client = discord.Client(status="Started Up")
 client = discord.Client()
 
 command_map = {}
@@ -50,41 +49,20 @@ my_bots = [brokkoly_bot_id, brokkoly_bot_test_id]
 mtg_legacy_discord_id = 329746807599136769
 brokkolys_bot_testing_zone_id = 225374061386006528
 madison_discord_id = 368078887361708033
-# bot_database_channel_id = None
 bot_ui_channel_id = None
 if IS_TEST:
-    # bot_database_channel_id = bot_database_channel_ids["test"]
     bot_ui_channel_id = bot_test_channel_ids["test"]
 else:
-    # bot_database_channel_id = bot_database_channel_ids["prod"]
     bot_ui_channel_id = bot_test_channel_ids["prod"]
 game_jazz_id = 639124326385188864
 
 
-# TODO Check roles instead of just ids. Maybe give people in the bot server the ability
 
-# protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout"]
-
-# timeout = {
-#     mtg_legacy_discord_id: 60,
-#     brokkolys_bot_testing_zone_id: 5,
-#     madison_discord_id: 0
-# }
-# maintenance = {}
 
 
 class BrokkolyBot(discord.Client):
     protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout",
                           "!extractemoji"]
-
-    # author_whitelist = [
-    #     146687253370896385  # me
-    #     , 115626912394510343  # ori
-    #     #, 200773608094564352  # wind
-    #     , 115602332863037443  # thaya
-    #     , 185287142388400129  # thalia
-    #     , 120756475768471554  # solyra
-    # ]
 
     def __init__(self, is_test=False, token=None, database_url=None):
         self.token = token
@@ -171,8 +149,6 @@ class BrokkolyBot(discord.Client):
                 await self.remove_user_timeout(user, message.guild, timeout_role_id)
             return
 
-        # store_user_timeout
-
         if message.content.startswith("!estop") and message.author.id in self.author_whitelist:
             # TODO Depreciate this part
             brokkoly = self.get_user(146687253370896385)
@@ -189,7 +165,6 @@ class BrokkolyBot(discord.Client):
             quit()
 
         if message.content.startswith("!extractemoji"):
-            # url_content = await self.get_content_from_message_url(message)
             message_from_url = await self.get_message_from_url(message)
             custom_emojis = self.get_emoji_ids(message_from_url if message_from_url else message)
             await self.send_emoji_urls(custom_emojis, message.channel)
@@ -341,7 +316,6 @@ class BrokkolyBot(discord.Client):
         leftovers = ""
         for command_string in session.command_map:
             if show_message:
-                # leftovers = await handle_big_message(message,leftovers,
                 await self.get_command_response_lines(session.command_map, command_string, message, show_message)
 
     async def get_command_response_lines(self, command_map, command_string, message, show_message):
@@ -350,7 +324,6 @@ class BrokkolyBot(discord.Client):
         for count in command_map[command_string]:
             entry_value = command_map[command_string][count][1]
             if show_message:
-                # await message.channel.send("!%s %d %s\n" % (command_string, count, entry_value))
                 # TODO do this so that embeds are nice
                 leftovers = await self.handle_big_message(message, leftovers,
                                                           "!%s %d %s\n" % (command_string, count, entry_value))
@@ -499,49 +472,10 @@ class BrokkolyBot(discord.Client):
         for e in emoji_ids:
             await channel.send(url.format(str(e[1]), "gif" if e[0] else "png"))
 
-    # def find_in_command_map(self,command, to_search):
-    #     closest = ""
-    #     closest_number = 10000000
-    #     for entry in command_map[command]:
-    #         new_closest_number = entry.lower().find(to_search)
-    #         if len(to_search) > len(entry): continue
-    #         if new_closest_number < closest_number and new_closest_number != -1:
-    #             closest_number = new_closest_number
-    #             closest = entry
-    #     return closest
-
-    # def add_to_map(command_map_to_add_to, command, message):
-    #     """Add the command and message to the command map"""
-    #     if command not in command_map_to_add_to:
-    #         command_map_to_add_to[command] = []
-    #     if message not in command_map_to_add_to[command]:
-    #         command_map_to_add_to[command].append(message)
-    #         return True
-    #     else:
-    #         return False
-    #
-    #
-    # async def get_map_from_discord():
-    #     """Load the map form the discord database channel"""
-    #     # TODO Use an actual database
-    #     new_command_map = {}
-    #     channel = client.get_channel(bot_database_channel_id)
-    #     messages = await channel.history(limit=1000).flatten()
-    #     for message in messages:
-    #         content = message.content
-    #         first_space = content.find(" ")
-    #         command = content[:first_space]
-    #         message = content[first_space + 1:]
-    #         add_to_map(new_command_map, command, message)
-    #     return new_command_map
-
     async def add_user_timeout(self, user, timeout_time, server, role_id):
         await user.add_roles(server.get_role(role_id), reason="Timing out user")
         until_time_ms = int(round(datetime.utcnow().timestamp() * 1000)) + timeout_time * 1000 * 60
         self.bot_database.add_user_timeout_to_database(server.id, user.id, until_time_ms)
-        # s = sched.scheduler()
-        # s.enter(timeout_time / 1000, 1, remove_user_timeout, (user, server, role_id))
-        # s.run()
         return
 
     async def remove_user_timeout(self, user, server, role_id):
@@ -571,13 +505,6 @@ class BrokkolyBot(discord.Client):
 
     # todo finish checking for timed out users
 
-    # async def add_quote_to_discord(self,command, message):
-    #     """Sends a message to the discord database with the new entry"""
-    #     save_message = command + " " + message
-    #     channel = client.get_channel(bot_database_channel_id)
-    #     await channel.send(save_message)
-    #     return
-
     async def update_timeout_role_for_server(self, server, role=None):
         if not role:
             role = server.get_role(await self.get_timeout_role(server))
@@ -598,8 +525,6 @@ class BrokkolyBot(discord.Client):
 
     def user_can_maintain(self, message):
         author = message.author
-        # if author.id in self.author_whitelist:
-        #    return True
         if (author.permissions_in(message.channel).manage_guild):
             return True
         if (self.user_has_bot_manager_role(author, message.guild.id)):
@@ -627,9 +552,7 @@ class BrokkolyBot(discord.Client):
 
     @tasks.loop(minutes=1.0)
     async def check_users_to_remove(self):
-        print("Checking for users to remove")
         users_from_db = self.bot_database.get_user_timeouts_finished(int(round(datetime.utcnow().timestamp() * 1000)))
-        print("Got users_from_db")
         if users_from_db:
             for user in users_from_db:
                 server_id = user[0]
@@ -638,23 +561,6 @@ class BrokkolyBot(discord.Client):
                 user = server.get_member(user_id)
                 role_id = self.bot_database.get_timeout_role_for_server(server_id)
                 await self.remove_user_timeout(user, server, role_id)
-
-    # @tasks.loop(minutes=5.0)
-    # async def verify_server_details(self):
-    #     servers = self.bot_database.get_all_servers()
-    #     if not servers:
-    #         return
-    #     for server_id in servers:
-    #         server_id = server_id[0]
-    #         server = self.get_guild(server_id)
-    #         if not server: continue
-    #         server_name = server.name
-    #         server_icon_url = str(server.icon_url_as(static_format='png', size=64))
-    #         self.bot_database.set_server_details(server_id, server_name, server_icon_url)
-    # @check_users_to_remove.before_loop
-    # async def before_check_users(self):
-    #     await self.wait_until_ready()
-
 
 class CheckUserLoop:
     def __init__(self, bot):
@@ -677,37 +583,6 @@ class CheckUserLoop:
     @check_users_to_remove.before_loop
     async def before_check_users(self):
         await self.bot.wait_until_ready()
-
-
-# class VerifyServerDetailsLoop:
-#     def __init__(self, bot):
-#         self.bot = bot
-#         self.verify_server_details.start()
-#
-#         @tasks.loop(minutes=5.0)
-#         async def verify_server_details(self):
-#             servers = self.bot_database.get_all_servers()
-#             if not servers:
-#                 return
-#             for server_id in servers:
-#                 server = await discord.guild(server_id)
-#                 server_name = server.name
-#                 server_icon_url = server.icon_url_as(static_format='png', size=64)
-#                 self.bot_database.set_server_details(server_id, server_name, server_icon_url)
-
-
-@tasks.loop(minutes=1)
-async def check_users_to_remove():
-    # users_from_db = get_user_timeouts_finished(conn, int(round(datetime.utcnow().timestamp() * 1000)))
-    print("Checking for users to remove")
-    # for user_from_db in users_from_db:
-    #     server_id = user_from_db[0]
-    #     server = client.get_guild(server_id)
-    #     user_id = user_from_db[1]
-    #     user = server.get_member(user_id)
-    #     role_id = get_timeout_role_for_server(conn, server_id)
-    #     await remove_user_timeout(user, server, role_id)
-
 
 @atexit.register
 def shutting_down():
@@ -740,4 +615,3 @@ class MaintenanceSession():
 
 
 running_bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
-# CheckUserLoop(running_bot)
