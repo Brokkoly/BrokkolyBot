@@ -364,8 +364,8 @@ class BrokkolyBotDatabase:
         cursor.close()
         self.conn.commit()
 
-    def send_query(self, cur, command, args=None):
-        # print(command)
+    @staticmethod
+    def send_query(cur, command, args=None):
         try:
             if args:
                 cur.execute(command, args)
