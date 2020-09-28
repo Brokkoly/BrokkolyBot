@@ -178,6 +178,7 @@ class BrokkolyBotDatabase:
         """
         cursor = self.conn.cursor()
         if to_search:
+            # TODO: use regex instead of like so that you can match on mixed case versions of the string.
             query = """
             SELECT entry_value
             FROM COMMAND_LIST

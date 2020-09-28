@@ -3,10 +3,23 @@ import atexit
 import re
 import discord
 from importlib import util
+
 from brokkoly_bot_database import *
 from datetime import datetime
 from discord.ext import tasks
+from discord.ext import commands
 import os
+import unittest
+
+# Todo: replace instances of server with guild
+NO_MENTIONS_ALLOWED_ERROR = "Error! No mentions allowed."
+BANG_NOT_NEEDED_WARNING = "Warning! \"!\" is no longer necessary when adding new commands, and will no longer be accepted in the future"
+INSUFFICIENT_PRIVELIDGES_ERROR = "Error! Insufficient privileges to add."
+PROTECTED_COMMAND_ERROR = "Error! That is a protected command"
+NEW_VALUE_TOO_LONG_ERROR = "Error! Message cannot be longer than 500 characters."
+COMMAND_TOO_LONG_ERROR = "Error! Command cannot be longer than 20 characters."
+EXPECTED_SYNTAX_ERROR = "Error! Expected \"!add <command length at least 3> <message>\"."
+CAN_ONLY_CONTAIN_LETTERS_ERROR = "Error! Command can only contain letters"
 
 TOKEN = None
 IS_TEST = False
@@ -57,158 +70,161 @@ else:
 game_jazz_id = 639124326385188864
 
 
+class BrokkolyBot(commands.Bot):
+    protected_commands = ["help", "add", "estop", "otherservers", "cooldown", "timeout", "removetimeout",
+                          "extractemoji"]
 
+    def __init__(self, is_test=False, token=None, database_url=None, is_unit_test=False):
 
-
-class BrokkolyBot(discord.Client):
-    protected_commands = ["!help", "!add", "!estop", "!otherservers", "!cooldown", "!timeout", "!removetimeout",
-                          "!extractemoji"]
-
-    def __init__(self, is_test=False, token=None, database_url=None):
-        self.token = token
-        self.is_test = is_test
         self.timeout = {}
         self.maintenance = {}
         self.last_message_time = {}
         self.initialize_regex()
-        discord.Client.__init__(self)
-        # discord.ext.commands.Bot.__init__(self,command_prefix="!",owner_id=146687253370896385)
-        self.bot_database = BrokkolyBotDatabase(database_url)
-        self.run(token)
+        # todo: load command prefixes from database per guild.
+
+        if not is_unit_test:
+            self.token = token
+            self.is_test = is_test
+            self.bot_database = BrokkolyBotDatabase(database_url)
+            commands.Bot.__init__(self, command_prefix=['!'])
+        # self.run(token)
+
+    # class BrokkolyBotTest(unittest.UnitTest):
+    #    test1 = BrokkolyBot(is_unit_test=False)
 
     # region events
-    @client.event
-    async def on_message(self, message):
-        """Fires every time a user sends a message in an associated server.
-        This is where everything happens.
-        """
-        # global command_map
-        # global maintenance
-        # Don't reply to our own messages
-        if message.author.id in my_bots:
-            return
-        if not message.content.startswith("!"):
-            return
-
-        if message.content.startswith("!maintenance") and message.guild and self.user_can_maintain(message):
-            dm_channel = await message.author.create_dm()
-            self.maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, self.bot_database)
-
-            await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
-                                  + "\n!list <search param coming soon>: List out the commands for the server and their ids"
-                                  + "\n!remove <command (no !)> <command # from !list or * to remove all>"
-                                  + "\n!roles Coming Soon!"
-                                  + "\n!cooldown <integer> Set the message cooldown for the server"
-                                  + "\n!add !<command> <message>: Add a new command."
-                                  + "\n!exit: Leave the maintenance session. You should do this when you're done."
-                                  )
-            await message.add_reaction("📧")
-            return
-
-        # todo loop through commands as keys to a map of functions
-
-        if message.channel.id in self.maintenance:
-            content = message.content
-            if (content.startswith("!exit")):
-                await message.add_reaction("🛑")
-                self.maintenance.pop(message.channel.id)
-                print("Exited maintenance")
-                return
-            if (content.startswith("!role")):
-                print("Role Commands")
-                return
-            if (content.startswith("!add")):
-                await self.handle_add(message, self.maintenance[message.channel.id].server_id)
-                return
-            if (content.startswith("!remove")):
-                await self.handle_remove(message, self.maintenance[message.channel.id])
-                return
-            if (content.startswith("!list")):
-                await self.handle_list(message, self.maintenance[message.channel.id], show_message=True)
-                return
-            if (content.startswith("!cooldown")):
-                await self.handle_cooldown(message, self.maintenance[message.channel.id])
-
-                return
-            return
-
-        if message.content.startswith("!timeout") and self.user_can_maintain(message):
-            parsed_timeout = self.parse_timeout(message.content)
-            if parsed_timeout <= 0:
-                return
-            timeout_time = int(round(parsed_timeout))
-            timeout_role_id = await self.get_timeout_role(message.guild)
-
-            for user in message.mentions:
-                await self.add_user_timeout(user, timeout_time, message.guild, timeout_role_id)
-            return
-
-        if message.content.startswith("!removetimeout") and self.user_can_maintain(message):
-            timeout_role_id = await self.get_timeout_role(message.guild)
-            for user in message.mentions:
-                await self.remove_user_timeout(user, message.guild, timeout_role_id)
-            return
-
-        if message.content.startswith("!estop") and message.author.id in self.author_whitelist:
-            # TODO Depreciate this part
-            brokkoly = self.get_user(146687253370896385)
-            brokkoly_dm = await brokkoly.create_dm()
-            await brokkoly_dm.send("Emergency Stop Called. Send Help."
-                                   + "\nServer: " + message.guild.name
-                                   + "\nChannel: " + message.channel.name
-                                   + "\nTime & Date: " + message.created_at.strftime("%H:%M:%S, %m/%d/%Y")
-                                   + "\n" + message.jump_url
-                                   )
-            await message.channel.send(
-                "@Brokkoly#0001 Emergency Stop Called. Send Help."
-                "\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
-            quit()
-
-        if message.content.startswith("!extractemoji"):
-            message_from_url = await self.get_message_from_url(message)
-            custom_emojis = self.get_emoji_ids(message_from_url if message_from_url else message)
-            await self.send_emoji_urls(custom_emojis, message.channel)
-            return
-
-        if message.content.startswith("!help"):
-            response = "Available Commands:\n" \
-                       "!help - You obviously know this\n" \
-                       "!add - Add a new command. Syntax: !add !<command> <message>\n" \
-                       "!extractemoji - Get the URL for the emojis in the rest of the message\n" \
-                       "See my code: <https://github.com/Brokkoly/BrokkolyBot>\n" \
-                       "             <https://github.com/Brokkoly/BrokkolyBotFrontend>\n" \
-                       "To see all commands and responses,please go to https://brokkolybot.azurewebsites.net\n" \
-                       "Plus the following commands: "
-
-            for command in self.bot_database.get_all_command_strings(message.guild.id):
-                response = response + "\n" + "!" + command[0]
-            user_dm_channel = await message.author.create_dm()
-            await user_dm_channel.send(response)
-            await message.add_reaction("📧")
-            return
-
-        if message.channel.type == discord.ChannelType.private:
-            return
-
-        if message.content.startswith("!add "):
-            await self.handle_add(message)
-            return
-
-        command = message.content.lower()[1:]
-        command, to_search = self.parse_search(command)
-        msg = self.bot_database.get_message(message.guild.id, command, to_search)
-        if msg == "": return
-
-        if message.guild.id in self.last_message_time:
-            # todo split out this retrieval
-            cooldown_result = self.bot_database.get_server_cooldown(message.guild.id)
-            cooldown_result = 30 if cooldown_result < 0 else cooldown_result
-            if not (message.created_at - self.last_message_time[message.guild.id]).total_seconds() > cooldown_result:
-                await message.add_reaction("⏳")
-                return
-
-        self.last_message_time[message.guild.id] = message.created_at
-        await message.channel.send(msg)
+    # @client.event
+    # async def on_message(self, message):
+    #     """Fires every time a user sends a message in an associated server.
+    #     This is where everything happens.
+    #     """
+    #     # global command_map
+    #     # global maintenance
+    #     # Don't reply to our own messages
+    #     if message.author.id in my_bots:
+    #         return
+    #     if not message.content.startswith("!"):
+    #         return
+    #
+    #     if message.content.startswith("!maintenance") and message.guild and self.user_can_maintain(message):
+    #         dm_channel = await message.author.create_dm()
+    #         self.maintenance[dm_channel.id] = MaintenanceSession(message.guild.id, dm_channel, self.bot_database)
+    #
+    #         await dm_channel.send("Entering maintenance mode for %s." % (message.guild.name)
+    #                               + "\n!list <search param coming soon>: List out the commands for the server and their ids"
+    #                               + "\n!remove <command (no !)> <command # from !list or * to remove all>"
+    #                               + "\n!roles Coming Soon!"
+    #                               + "\n!cooldown <integer> Set the message cooldown for the server"
+    #                               + "\n!add !<command> <message>: Add a new command."
+    #                               + "\n!exit: Leave the maintenance session. You should do this when you're done."
+    #                               )
+    #         await message.add_reaction("📧")
+    #         return
+    #
+    #     # todo loop through commands as keys to a map of functions
+    #
+    #     if message.channel.id in self.maintenance:
+    #         content = message.content
+    #         if (content.startswith("!exit")):
+    #             await message.add_reaction("🛑")
+    #             self.maintenance.pop(message.channel.id)
+    #             print("Exited maintenance")
+    #             return
+    #         if (content.startswith("!role")):
+    #             print("Role Commands")
+    #             return
+    #         if (content.startswith("!add")):
+    #             await self.handle_add(message, self.maintenance[message.channel.id].server_id)
+    #             return
+    #         if (content.startswith("!remove")):
+    #             await self.handle_remove(message, self.maintenance[message.channel.id])
+    #             return
+    #         if (content.startswith("!list")):
+    #             await self.handle_list(message, self.maintenance[message.channel.id], show_message=True)
+    #             return
+    #         if (content.startswith("!cooldown")):
+    #             await self.handle_cooldown(message, self.maintenance[message.channel.id])
+    #
+    #             return
+    #         return
+    #
+    #     if message.content.startswith("!timeout") and self.user_can_maintain(message):
+    #         parsed_timeout = self.parse_timeout(message.content)
+    #         if parsed_timeout <= 0:
+    #             return
+    #         timeout_time = int(round(parsed_timeout))
+    #         timeout_role_id = await self.get_timeout_role(message.guild)
+    #
+    #         for user in message.mentions:
+    #             await self.add_user_timeout(user, timeout_time, message.guild, timeout_role_id)
+    #         return
+    #
+    #     if message.content.startswith("!removetimeout") and self.user_can_maintain(message):
+    #         timeout_role_id = await self.get_timeout_role(message.guild)
+    #         for user in message.mentions:
+    #             await self.remove_user_timeout(user, message.guild, timeout_role_id)
+    #         return
+    #
+    #     if message.content.startswith("!estop") and message.author.id in self.author_whitelist:
+    #         # TODO Depreciate this part
+    #         brokkoly = self.get_user(146687253370896385)
+    #         brokkoly_dm = await brokkoly.create_dm()
+    #         await brokkoly_dm.send("Emergency Stop Called. Send Help."
+    #                                + "\nServer: " + message.guild.name
+    #                                + "\nChannel: " + message.channel.name
+    #                                + "\nTime & Date: " + message.created_at.strftime("%H:%M:%S, %m/%d/%Y")
+    #                                + "\n" + message.jump_url
+    #                                )
+    #         await message.channel.send(
+    #             "@Brokkoly#0001 Emergency Stop Called. Send Help."
+    #             "\n<:notlikeduck:522871146694311937>\n<:Heck:651250241722515459>")
+    #         quit()
+    #
+    #     if message.content.startswith("!extractemoji"):
+    #         message_from_url = await self.get_message_from_url(message)
+    #         custom_emojis = self.get_emoji_ids(message_from_url if message_from_url else message)
+    #         await self.send_emoji_urls(custom_emojis, message.channel)
+    #         return
+    #
+    #     if message.content.startswith("!help"):
+    #         response = "Available Commands:\n" \
+    #                    "!help - You obviously know this\n" \
+    #                    "!add - Add a new command. Syntax: !add !<command> <message>\n" \
+    #                    "!extractemoji - Get the URL for the emojis in the rest of the message\n" \
+    #                    "See my code: <https://github.com/Brokkoly/BrokkolyBot>\n" \
+    #                    "             <https://github.com/Brokkoly/BrokkolyBotFrontend>\n" \
+    #                    "To see all commands and responses,please go to https://brokkolybot.azurewebsites.net\n" \
+    #                    "Plus the following commands: "
+    #
+    #         for command in self.bot_database.get_all_command_strings(message.guild.id):
+    #             response = response + "\n" + "!" + command[0]
+    #         user_dm_channel = await message.author.create_dm()
+    #         await user_dm_channel.send(response)
+    #         await message.add_reaction("📧")
+    #         return
+    #
+    #     if message.channel.type == discord.ChannelType.private:
+    #         return
+    #
+    #     # if message.content.startswith("!add "):
+    #     #     await self.handle_add(message)
+    #     #     return
+    #
+    #     command = message.content.lower()[1:]
+    #     command, to_search = self.parse_search(command)
+    #     msg = self.bot_database.get_message(message.guild.id, command, to_search)
+    #     if msg == "": return
+    #
+    #     if message.guild.id in self.last_message_time:
+    #         # todo split out this retrieval
+    #         cooldown_result = self.bot_database.get_server_cooldown(message.guild.id)
+    #         cooldown_result = 30 if cooldown_result < 0 else cooldown_result
+    #         if not (message.created_at - self.last_message_time[message.guild.id]).total_seconds() > cooldown_result:
+    #             await message.add_reaction("⏳")
+    #             return
+    #
+    #     self.last_message_time[message.guild.id] = message.created_at
+    #     await message.channel.send(msg)
 
     @client.event
     async def on_ready(self):
@@ -241,46 +257,51 @@ class BrokkolyBot(discord.Client):
     def initialize_regex(self):
         after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
         remove_regex_string = r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)'
+        command_regex_string = r'[a-zA-Z]+'
         self.after_add_compiled_regex = re.compile(after_add_regex_string, re.DOTALL)
         self.remove_compiled_regex = re.compile(remove_regex_string)
+        self.command_compiled_regex = re.compile(command_regex_string)
 
     # endregion initializers
 
-    async def handle_add(self, message, server_id=None):
-        """add the value in message to the the command map"""
+    async def handle_add(self, message, command, new_entry):
+        """add the value in message to the the database"""
         global command_map
-        if not server_id:
-            if message.guild:
-                server_id = message.guild.id
-            else:
-                await self.reject_message(message, "Error! Not in Maintenance Mode. Use !maintenance from a server")
-                return
+        server_id = message.guild.id
+        # else:
+        #     await self.reject_message(message, "Error! Not in Maintenance Mode. Use !maintenance from a server")
+        #     return
         if self.user_can_maintain(message):
             if message.mentions or message.role_mentions or message.mention_everyone:
-                await self.reject_message(message, "Error! No mentions allowed.")
+                await self.reject_message(message, NO_MENTIONS_ALLOWED_ERROR
+                                          )
                 return
-            result = self.parse_add(message.content)
-            if result:
-                command = result[0]
-                new_entry = result[1]
-                if len(command) >= 21:
-                    await self.reject_message(message, "Error! Command cannot be longer than 20 characters.")
-                    return
-                if len(new_entry) > 500:
-                    await self.reject_message(message, "Error! Message cannot be longer than 500 characters.")
-                    return
-                command = command.lower()
-                if command in self.protected_commands:
-                    await self.reject_message(message, "Error! That is a protected command")
-                    return
+            error = ""
+            # TODO: actual error class?
+            if (command[0] == "!"):
+                await message.channel.send(
+                    BANG_NOT_NEEDED_WARNING)
+                command = command[1:]
+            if (error := self.validate_add(command, new_entry)):
+                await self.reject_message(message, error)
+                return
                 if self.bot_database.add_command(server_id, command, new_entry):
                     await message.add_reaction(self.get_emoji(445805262880899075))
                 return
-            else:
-                await self.reject_message(message, "Error! Expected \"!add !<command length at least 3> <message>\".")
-                return
         else:
-            await self.reject_message(message, "Error! Insufficient privileges to add.", True)
+            await self.reject_message(message, INSUFFICIENT_PRIVELIDGES_ERROR, True)
+
+    def validate_add(self, command, new_entry):
+        if not re.match(self.command_compiled_regex, command):
+            return CAN_ONLY_CONTAIN_LETTERS_ERROR
+        if len(command) < 3:
+            return EXPECTED_SYNTAX_ERROR
+        if len(command) >= 20:
+            return COMMAND_TOO_LONG_ERROR
+        if len(new_entry) > 500:
+            return NEW_VALUE_TOO_LONG_ERROR
+        if command in self.protected_commands:
+            return PROTECTED_COMMAND_ERROR
 
     async def handle_remove(self, message, session):
         result = self.parse_remove(message.content)
@@ -562,6 +583,7 @@ class BrokkolyBot(discord.Client):
                 role_id = self.bot_database.get_timeout_role_for_server(server_id)
                 await self.remove_user_timeout(user, server, role_id)
 
+
 class CheckUserLoop:
     def __init__(self, bot):
         self.bot = bot
@@ -583,6 +605,7 @@ class CheckUserLoop:
     @check_users_to_remove.before_loop
     async def before_check_users(self):
         await self.bot.wait_until_ready()
+
 
 @atexit.register
 def shutting_down():
@@ -614,4 +637,24 @@ class MaintenanceSession():
             self.command_map[command_string][count] = [command_id, entry_value]
 
 
-running_bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
+bot = None
+
+if __name__ == '__main__':
+    bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
+
+
+    @commands.command(aliases=["add"], rest_is_raw=True)
+    async def testAdd(ctx, *args):
+        print('Command: {}\nMessage: {}'.format(args[0] or "", " ".join(args[1:]) or ""))
+        await ctx.send('Command: {}\nMessage: {}'.format(args[0] or "", " ".join(args[1:]) or ""))
+        await bot.handle_add(ctx.message, args[0].lower(), " ".join(args[1:]))
+
+
+    bot.add_command(testAdd)
+    # @bot.command(rest_is_raw=True)
+    # async def add(ctx, *args):
+    #     print('Command: {}\nMessage: {}'.format(args[0] or "", " ".join(args[1:]) or ""))
+    #     await ctx.send('Command: {}\nMessage: {}'.format(args[0] or "", " ".join(args[1:]) or ""))
+
+    # await self.handle_add(ctx.message)
+    bot.run(TOKEN)
