@@ -3,19 +3,18 @@ import atexit
 import re
 import discord
 from importlib import util
-import deprecation
 
 from brokkoly_bot_database import *
 from datetime import datetime
 from discord.ext import tasks
 from discord.ext import commands
 import os
-import unittest
 
 # Todo: replace instances of server with guild
 NO_MENTIONS_ALLOWED_ERROR = "Error! No mentions allowed."
-BANG_NOT_NEEDED_WARNING = "Warning! \"!\" is no longer necessary when adding new commands, and will no longer be accepted in the future"
-INSUFFICIENT_PRIVELIDGES_ERROR = "Error! Insufficient privileges to add."
+BANG_NOT_NEEDED_WARNING = "Warning! \"!\" is no longer necessary when adding " \
+                          "new commands, and will no longer be accepted in the future"
+INSUFFICIENT_PRIVILEGES_ERROR = "Error! Insufficient privileges to add."
 PROTECTED_COMMAND_ERROR = "Error! That is a protected command"
 NEW_VALUE_TOO_LONG_ERROR = "Error! Message cannot be longer than 500 characters."
 COMMAND_TOO_LONG_ERROR = "Error! Command cannot be longer than 20 characters."
@@ -72,7 +71,7 @@ game_jazz_id = 639124326385188864
 
 
 class BrokkolyBot(commands.Bot):
-    protected_commands = ["help", "add", "estop", "otherservers", "cooldown", "timeout", "removetimeout",
+    protected_commands = ["help", "add", "otherservers", "cooldown", "timeout", "removetimeout",
                           "extractemoji"]
 
     def __init__(self, is_test=False, token=None, database_url=None, is_unit_test=False):
@@ -80,9 +79,10 @@ class BrokkolyBot(commands.Bot):
         self.timeout = {}
         self.maintenance = {}
         self.last_message_time = {}
-        self.initialize_regex()
+        self.after_add_compiled_regex = re.compile(r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+', re.DOTALL)
+        self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
+        self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
         # todo: load command prefixes from database per guild.
-        # TODO: load comand prefix from server
         self.prefixes = {225374061386006528: '?'}
 
         if not is_unit_test:
@@ -92,12 +92,11 @@ class BrokkolyBot(commands.Bot):
             # todo: load prefixes
             commands.Bot.__init__(self, command_prefix=self.prefix)
 
-    def prefix(self, bot, message):
-        id = message.guild.id
-        return self.prefixes.get(id, '!')
+    def prefix(self, _, message):
+        return self.prefixes.get(message.guild.id, '!')
 
     # region events
-    # @client.event
+    @client.event
     async def on_message(self, message):
         """Fires every time a user sends a message in an associated server.
         This is where everything happens.
@@ -106,14 +105,19 @@ class BrokkolyBot(commands.Bot):
             return
         if message.channel.type == discord.ChannelType.private:
             return
-        await self.process_commands(message)
+        try:
+            # todo: make it not print about an exception on every message
+            await self.process_commands(message)
+        except discord.ext.commands.errors.CommandNotFound:
+            pass
         if not message.content.startswith(self.prefix(None, message)):
             return
 
         command = message.content.lower()[1:]
         command, to_search = self.parse_search(command)
         msg = self.bot_database.get_message(message.guild.id, command, to_search)
-        if msg == "": return
+        if msg == "":
+            return
         if message.guild.id in self.last_message_time:
             cooldown_result = self.bot_database.get_server_cooldown(message.guild.id)
             cooldown_result = 30 if cooldown_result < 0 else cooldown_result
@@ -139,31 +143,17 @@ class BrokkolyBot(commands.Bot):
         self.check_users_to_remove.start()
         await self.update_timeout_role_for_all_servers()
 
-
     @client.event
     async def on_guild_join(self, guild):
         self.bot_database.add_server(guild.id, 30)
         return
-
 
     @client.event
     async def on_guild_remove(self, guild):
         # remove_server(conn, guild.id)
         return
 
-
     # endregion events
-    # region initializers
-    def initialize_regex(self):
-        after_add_regex_string = r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+'  # we've already stripped "!add" from the message
-        remove_regex_string = r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)'
-        command_regex_string = r'[a-zA-Z]+'
-        self.after_add_compiled_regex = re.compile(after_add_regex_string, re.DOTALL)
-        self.remove_compiled_regex = re.compile(remove_regex_string)
-        self.command_compiled_regex = re.compile(command_regex_string)
-
-
-    # endregion initializers
 
     async def handle_add(self, message, command, new_entry):
         """add the value in message to the the database"""
@@ -177,19 +167,19 @@ class BrokkolyBot(commands.Bot):
                                           )
                 return
             # TODO: actual error class?
-            if (command[0] == "!"):
+            if command[0] == "!":
                 await message.channel.send(
                     BANG_NOT_NEEDED_WARNING)
                 command = command[1:]
             error = self.validate_add(command, new_entry)
-            if (error):
+            if error:
                 await self.reject_message(message, error)
                 return
             if self.bot_database.add_command(server_id, command, new_entry):
                 await message.add_reaction(self.get_emoji(445805262880899075))
                 return
         else:
-            await self.reject_message(message, INSUFFICIENT_PRIVELIDGES_ERROR, True)
+            await self.reject_message(message, INSUFFICIENT_PRIVILEGES_ERROR, True)
 
     def validate_add(self, command, new_entry):
         if not re.match(self.command_compiled_regex, command):
@@ -234,7 +224,13 @@ class BrokkolyBot(commands.Bot):
         return
 
     async def handle_timeout(self, message, timeout_hours):
-        timeout_time = self.parse_timeout(message.content)
+        # todo: just parse it from timeout_hours
+        try:
+            timeout_time = float(timeout_hours)
+        except ValueError:
+            # todo: error message
+            timeout_time = 0
+        timeout_time = timeout_time if timeout_time else self.parse_timeout(message)
         if timeout_time <= 0:
             return
         timeout_time = 0
@@ -254,57 +250,8 @@ class BrokkolyBot(commands.Bot):
             await self.remove_user_timeout(user, message.guild, timeout_role_id)
         return
 
-    @deprecation.deprecated(details="No longer needed because of the website")
-    async def handle_remove(self, message, session):
-        """"""
-        result = self.parse_remove(message.content)
-        if not result:
-            # TODO add error message
-            await self.reject_message(message, "Error! incorrect remove format")
-            return
-        command = result[0]
-        message_number = result[1]
-        if message_number == "*":
-            self.bot_database.remove_command(session.server_id, command)
-            await message.add_reaction("🗑️")
-        else:
-            message_number = int(message_number)
-            command_id = session.command_map[command][message_number][0]
-            if (command_id >= 0):
-                self.bot_database.remove_command(command_id=command_id)
-                await message.add_reaction("🗑️")
-
-        return
-
-    async def handle_big_message(self, message, leftovers, new_line):
-        if (len(leftovers) + len(new_line) > 2000):
-            await message.channel.send(leftovers)
-            return new_line
-        else:
-            return leftovers + new_line
-
-    async def handle_list(self, message, session, show_message=False):
-        search_command = self.parse_list(message.content)
-        commands = None
-        session.load_command_map()
-        leftovers = ""
-        for command_string in session.command_map:
-            if show_message:
-                await self.get_command_response_lines(session.command_map, command_string, message, show_message)
-
-    async def get_command_response_lines(self, command_map, command_string, message, show_message):
-        response_message = ""
-        leftovers = "!%s responses:\n" % (command_string)
-        for count in command_map[command_string]:
-            entry_value = command_map[command_string][count][1]
-            if show_message:
-                # TODO do this so that embeds are nice
-                leftovers = await self.handle_big_message(message, leftovers,
-                                                          "!%s %d %s\n" % (command_string, count, entry_value))
-        if leftovers != "":
-            await message.channel.send(leftovers)
-
-    async def reject_message(self, message, error, show_message=True):
+    @staticmethod
+    async def reject_message(message, error, show_message=True):
         """React with an x to the message, and provide an error message"""
         await message.add_reaction("❌")
         if show_message:
@@ -321,32 +268,19 @@ class BrokkolyBot(commands.Bot):
         else:
             return []
 
-    def parse_remove(self, content):
-        """
-        Parse a remove command
-        :param content: A string that starts with !remove
-        :return: an array holding the command and the message number to remove
-        """
-        string_to_parse = content[8:]
-        if re.fullmatch(self.remove_compiled_regex, string_to_parse):
-            first_space = string_to_parse.find(" ")
-            command = string_to_parse[:first_space]
-            message_number = string_to_parse[first_space + 1:]
-            return [command, message_number]
-        else:
-            return []
-
-    def parse_cooldown(self, content):
+    @staticmethod
+    def parse_cooldown(content):
         string_to_parse = content[9:]
         try:
             new_timeout = int(string_to_parse)
-        except:
+        except ValueError:
             return -1
-        if (new_timeout >= 0):
+        if new_timeout >= 0:
             return new_timeout
         return -1
 
-    def parse_search(self, content):
+    @staticmethod
+    def parse_search(content):
         """parse the content to get the command and search string.
         The Search string may be ""
         Keyword Arguments:
@@ -359,15 +293,12 @@ class BrokkolyBot(commands.Bot):
         to_search = content[first_space + 1:]
         return [command, to_search]
 
-    def parse_list(self, content):
-        string_to_parse = content[6:]
-        return string_to_parse
-
-    def parse_timeout(self, content):
+    @staticmethod
+    def parse_timeout(content):
         last_greater_than = content.rfind('>')
         try:
             time_in_hours = float(content[last_greater_than + 1:])
-        except:
+        except ValueError:
             return 0
         return time_in_hours
 
@@ -376,7 +307,8 @@ class BrokkolyBot(commands.Bot):
         custom_emojis = custom_emojis + self.get_emoji_ids_from_reactions(message)
         return list(dict.fromkeys(custom_emojis))
 
-    def get_emoji_ids_from_reactions(self, message):
+    @staticmethod
+    def get_emoji_ids_from_reactions(message):
         custom_emojis = []
         for reaction in [r.emoji for r in message.reactions]:
             if isinstance(reaction, str):
@@ -390,7 +322,7 @@ class BrokkolyBot(commands.Bot):
         return custom_emojis
 
     async def get_content_from_message_url(self, message):
-        url = re.findall(r'https:\/\/(?:canary\.)?discordapp\.com\/channels\/[0-9]+\/[0-9]+\/[0-9]+', message.content)
+        url = re.findall(r'https://(?:canary\.)?discordapp\.com/channels/[0-9]+/[0-9]+/[0-9]+', message.content)
         if (not url) or (not url[0]):
             return ""
         parts = url[0].split('/')
@@ -398,25 +330,25 @@ class BrokkolyBot(commands.Bot):
             message_id = int(parts[-1])
             channel_id = int(parts[-2])
             guild_id = int(parts[-3])
-        except:
+        except ValueError:
             await message.channel.send("Invalid URL")
             return
         guild = await self.fetch_guild(guild_id)
-        if (not guild):
+        if not guild:
             await message.channel.send("Sorry, I don't have access to the server that message is from.")
             return ""
         channel = await self.fetch_channel(channel_id)
-        if (not channel):
+        if not channel:
             await message.channel.send("Sorry, I don't have access to the channel that message is from.")
             return ""
         other_message = await channel.fetch_message(message_id)
-        if (other_message and other_message.content):
+        if other_message and other_message.content:
             return other_message.content
         else:
             return ""
 
     async def get_message_from_url(self, message):
-        url = re.findall(r'https:\/\/(?:canary\.)?discordapp\.com\/channels\/[0-9]+\/[0-9]+\/[0-9]+', message.content)
+        url = re.findall(r'https://(?:canary\.)?discordapp\.com/channels/[0-9]+/[0-9]+/[0-9]+', message.content)
         if (not url) or (not url[0]):
             return ""
         parts = url[0].split('/')
@@ -424,24 +356,25 @@ class BrokkolyBot(commands.Bot):
             message_id = int(parts[-1])
             channel_id = int(parts[-2])
             guild_id = int(parts[-3])
-        except:
+        except ValueError:
             await message.channel.send("Invalid URL")
             return
         guild = await self.fetch_guild(guild_id)
-        if (not guild):
+        if not guild:
             await message.channel.send("Sorry, I don't have access to the server that message is from.")
             return None
         channel = await self.fetch_channel(channel_id)
-        if (not channel):
+        if not channel:
             await message.channel.send("Sorry, I don't have access to the channel that message is from.")
             return None
         other_message = await channel.fetch_message(message_id)
-        if (other_message and other_message.content):
+        if other_message and other_message.content:
             return other_message
         else:
             return None
 
-    async def send_emoji_urls(self, emoji_ids, channel):
+    @staticmethod
+    async def send_emoji_urls(emoji_ids, channel):
         url = "https://cdn.discordapp.com/emojis/{}.{}"
         for e in emoji_ids:
             await channel.send(url.format(str(e[1]), "gif" if e[0] else "png"))
@@ -459,25 +392,26 @@ class BrokkolyBot(commands.Bot):
         print("Removed a timeout")
         return
 
+    # todo on channel creation set timeout role permissions in that channel
+
     async def get_timeout_role(self, server):
         role_id = self.bot_database.get_timeout_role_for_server(server.id)
         if role_id and server.get_role(role_id):
             return role_id
         my_name = server.me.display_name
-        role = await server.create_role(name="%s's Timeout Role" % (my_name),
+        role = await server.create_role(name="%s's Timeout Role" % my_name,
                                         permissions=discord.Permissions(send_messages=False),
-                                        reason="Creating a role for timing out. Feel free to edit the name but please don't mess with the permissions.")
+                                        reason="Creating a role for timing out. Feel free to edit the name but please "
+                                               "don't mess with the permissions.")
         # TODO maybe initialize this separately or on startup so that new channels get properly set?
         await self.update_timeout_role_for_server(server, role)
 
-        if (role):
+        if role:
             role_id = role.id
             self.bot_database.add_timeout_role_for_server(server.id, role_id)
         else:
             role_id = None
         return role_id
-
-    # todo finish checking for timed out users
 
     async def update_timeout_role_for_server(self, server, role=None):
         if not role:
@@ -502,9 +436,9 @@ class BrokkolyBot(commands.Bot):
 
     def user_can_maintain(self, message):
         author = message.author
-        if (author.permissions_in(message.channel).manage_guild):
+        if author.permissions_in(message.channel).manage_guild:
             return True
-        if (self.user_has_bot_manager_role(author, message.guild.id)):
+        if self.user_has_bot_manager_role(author, message.guild.id):
             return True
 
     def user_has_bot_manager_role(self, author, server_id):
@@ -518,14 +452,15 @@ class BrokkolyBot(commands.Bot):
 
     async def handle_cooldown(self, message, session):
         parse_result = self.parse_cooldown(message.content)
-        if (parse_result < 0):
+        if parse_result < 0:
             await self.reject_message(message, "Error! Timeout value must be an integer >=0.")
         else:
             self.bot_database.set_server_cooldown(session.server_id, parse_result)
 
-    def get_emoji_tuple(self, raw_emoji):
+    @staticmethod
+    def get_emoji_tuple(raw_emoji):
         parts = raw_emoji.split(':')
-        return (parts[0].replace('<', ''), parts[2].replace('>', ''))
+        return parts[0].replace('<', ''), parts[2].replace('>', '')
 
     @tasks.loop(minutes=1.0)
     async def check_users_to_remove(self):
@@ -540,57 +475,9 @@ class BrokkolyBot(commands.Bot):
                 await self.remove_user_timeout(user, server, role_id)
 
 
-class CheckUserLoop:
-    def __init__(self, bot):
-        self.bot = bot
-        self.check_users_to_remove.start()
-
-    @tasks.loop(minutes=1.0)
-    async def check_users_to_remove(self):
-        users_from_db = self.bot.bot_database.get_user_timeouts_finished(
-            int(round(datetime.utcnow().timestamp() * 1000)))
-        print("Checking for users to remove")
-        for user in users_from_db:
-            server_id = user[1]
-            server = await discord.guild(server_id)
-            user_id = user[2]
-            user = server.get_user(user_id)
-            role_id = self.bot.bot_database.get_timeout_role_for_server(server_id)
-            await self.bot.remove_user_timeout(user, server, role_id)
-
-    @check_users_to_remove.before_loop
-    async def before_check_users(self):
-        await self.bot.wait_until_ready()
-
-
 @atexit.register
 def shutting_down():
-    # TODO Make this work?
     conn.close()
-
-
-class MaintenanceSession():
-    command_map = {}
-
-    def __init__(self, server_id=None, channel=None, bot_database=None):
-        self.server_id = server_id
-        self.channel_id = channel
-        self.bot_database = bot_database
-        self.command_map = self.load_command_map()
-
-    def load_command_map(self):
-        self.command_map = {}
-        commands = self.bot_database.get_all_commands(self.server_id)
-        for command in commands:
-            command_id = command[0]
-            command_string = command[1]
-            entry_value = command[2]
-            count = 0
-            if command_string in self.command_map:
-                count = len(self.command_map[command_string])
-            else:
-                self.command_map[command_string] = {}
-            self.command_map[command_string][count] = [command_id, entry_value]
 
 
 bot = None
@@ -622,8 +509,8 @@ if __name__ == '__main__':
 
     @bot.command()
     @commands.check(bot.user_can_maintain_context)
-    async def timeout(ctx, *, time_seconds):
-        await bot.handle_timeout(ctx.message, time_seconds)
+    async def timeout(ctx, *args):
+        await bot.handle_timeout(ctx.message, args[-1])
         return
 
 
@@ -631,11 +518,6 @@ if __name__ == '__main__':
     @commands.check(bot.user_can_maintain_context)
     async def removetimeout(ctx):
         await bot.handle_remove_timeout(ctx.message)
-        return
-
-
-    @bot.command()
-    async def default(ctx):
         return
 
 
