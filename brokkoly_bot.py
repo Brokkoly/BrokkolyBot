@@ -414,7 +414,7 @@ class BrokkolyBot(commands.Bot):
         if not role:
             return
         for channel in server.text_channels:
-            if channel.permissions_for(server.get_member(self.user.id)).view_channel:
+            if channel.permissions_for(server.get_member(self.user.id)).manage_channels:
                 await channel.set_permissions(role, send_messages=False)
         return
 
