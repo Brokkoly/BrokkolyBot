@@ -179,6 +179,41 @@ class BrokkolyBotDatabase:
         cursor.close()
         return results
 
+    def get_all_twitch_users(self, server_id=''):
+        if (server_id):
+            return self.get_all_twitch_users_from_server(server_id)
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                        SELECT channel_name,server_id,discord_user_id FROM twitch_users;""")
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchall()
+        cursor.close()
+        return results
+
+    def get_all_twitch_users_from_server(self, server_id):
+        if (server_id):
+            return self.get_all_twitch_users_from_server(server_id)
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                                SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s;""",
+                        (str(server_id),))
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchall()
+        cursor.close()
+        return results
+
+    def add_twitch_user(self, server_id, channel_name, user_id):
+        server_id = str(server_id)
+        user_id = str(user_id)
+        cursor = self.conn.cursor()
+        self.send_query(cursor,
+                        """INSERT INTO twitch_users (channel_name,server_id,discord_user_id) VALUES (%s, %s, %s);""",
+                        (channel_name, server_id, user_id))
+        cursor.close()
+        self.conn.commit()
+
     def get_message(self, server_id, command, to_search):
         """
         :param server_id:
@@ -194,7 +229,7 @@ class BrokkolyBotDatabase:
             FROM COMMAND_LIST
             WHERE server_id = %s
                 AND command_string = %s
-                AND entry_value LIKE %s
+                AND entry_value ILIKE %s
             ORDER BY RANDOM()
             LIMIT 1;
             """
