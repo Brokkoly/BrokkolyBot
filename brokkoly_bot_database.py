@@ -169,6 +169,16 @@ class BrokkolyBotDatabase:
         SELECT * FROM COMMAND_LIST
         """)
 
+    def get_all_server_prefixes(self):
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                SELECT server_id,command_prefix FROM SERVER_LIST;""")
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchall()
+        cursor.close()
+        return results
+
     def get_message(self, server_id, command, to_search):
         """
         :param server_id:

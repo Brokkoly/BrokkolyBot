@@ -79,17 +79,17 @@ class BrokkolyBot(commands.Bot):
         self.timeout = {}
         self.maintenance = {}
         self.last_message_time = {}
-        self.after_add_compiled_regex = re.compile(r'(?<!.)(?!![aA]dd)![A-zA-Z]{3,} .+', re.DOTALL)
+        self.after_add_compiled_regex = re.compile(r'(?<!.)(?!!?[aA]dd)!?[A-zA-Z]{3,} .+', re.DOTALL)
         self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
-        # todo: load command prefixes from database per guild.
-        self.prefixes = {225374061386006528: '?'}
+        self.prefixes = {}
 
         if not is_unit_test:
             self.token = token
             self.is_test = is_test
             self.bot_database = BrokkolyBotDatabase(database_url)
-            # todo: load prefixes
+            for r in self.bot_database.get_all_server_prefixes():
+                self.prefixes[int(r[0])] = r[1] or "!"
             commands.Bot.__init__(self, command_prefix=self.prefix)
 
     def prefix(self, _, message):
