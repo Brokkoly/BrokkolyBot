@@ -1,16 +1,22 @@
-import random
 import atexit
+import os
+import random
 import re
-import discord
+from datetime import datetime
 from importlib import util
+from threading import Thread
+
+import discord
+import requests
+from discord.ext import commands
+from discord.ext import tasks
+from flask import Flask, json, request
 
 from brokkoly_bot_database import *
-from datetime import datetime
-from discord.ext import tasks
-from discord.ext import commands
-import os
+from brokkoly_bot_twitch import BrokkolyBotTwitch
 
 # Todo: replace instances of server with guild
+
 NO_MENTIONS_ALLOWED_ERROR = "Error! No mentions allowed."
 BANG_NOT_NEEDED_WARNING = "Warning! \"!\" is no longer necessary when adding " \
                           "new commands, and will no longer be accepted in the future"
@@ -24,6 +30,8 @@ CAN_ONLY_CONTAIN_LETTERS_ERROR = "Error! Command can only contain letters"
 TOKEN = None
 IS_TEST = False
 DATABASE_URL = None
+TWITCH_ID = None
+TWITCH_SECRET = None
 bot_database_channel_ids = {
     "test": 718850472814968905,
     "prod": 718205785888260139
@@ -44,9 +52,13 @@ if token_spec is not None:
     TOKEN = tokens.TOKEN_TEST
     IS_TEST = True
     DATABASE_URL = tokens.DATABASE_URL
+    TWITCH_ID = tokens.TWITCH_ID
+    TWITCH_SECRET = tokens.TWITCH_SECRET
 else:
     TOKEN = os.environ['TOKEN']
     DATABASE_URL = os.environ['DATABASE_URL']
+    TWITCH_ID = os.environ['TWITCH_ID']
+    TWITCH_SECRET = os.environ['TWITCH_SECRET']
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
@@ -69,12 +81,16 @@ else:
     bot_ui_channel_id = bot_test_channel_ids["prod"]
 game_jazz_id = 639124326385188864
 
+api = Flask(__name__)
+bot = None
+
 
 class BrokkolyBot(commands.Bot):
     protected_commands = ["help", "add", "otherservers", "cooldown", "timeout", "removetimeout",
                           "extractemoji"]
 
-    def __init__(self, is_test=False, token=None, database_url=None, is_unit_test=False):
+    def __init__(self, is_test=False, token=None, database_url=None, is_unit_test=False, twitch_id='',
+                 twitch_secret=''):
 
         self.timeout = {}
         self.maintenance = {}
@@ -83,6 +99,8 @@ class BrokkolyBot(commands.Bot):
         self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
         self.prefixes = {}
+        self.twitch = BrokkolyBotTwitch(twitch_id, twitch_secret)
+        self.twitch_queue = []
 
         if not is_unit_test:
             self.token = token
@@ -139,6 +157,7 @@ class BrokkolyBot(commands.Bot):
         print(self.user.id)
         print('------')
         self.check_users_to_remove.start()
+        self.check_twitch_queue.start()
         await self.update_timeout_role_for_all_servers()
 
     @client.event
@@ -452,6 +471,67 @@ class BrokkolyBot(commands.Bot):
         else:
             self.bot_database.set_server_cooldown(session.server_id, parse_result)
 
+    def add_all_subscriptions(self):
+        # todo: add subscription
+        users = self.bot_database.get_all_twitch_users()
+        done = {}
+        for user in users:
+            if user[0] in done:
+                self.add_subscription_for_user(user[0])
+                done[user[0]] = ""
+        return
+
+    def add_subscription_for_user(self, username):
+        # todo: add subscription
+        print("adding subscription for %s" % username)
+        return
+
+    async def handle_twitch_add(self, ctx, args):
+        channel_name = args[1]
+        discord_user_id = ""
+        if ctx.message.mentions and len(ctx.message.mentions) == 1:
+            discord_user_id = ctx.message.mentions[0].id
+        self.bot_database.add_twitch_user(ctx.message.guild.id, channel_name, discord_user_id)
+        # todo: add subscription
+
+    def handle_twitch_online(self, username):
+        self.twitch_queue.append((username, "ONLINE"))
+        return
+
+    def handle_twitch_offline(self, username):
+        self.twitch_queue.append((username, "OFFLINE"))
+        return
+
+    async def twitch_user_went_online(self, username, server_id, discord_user_id):
+        # todo: add role if exists, send message to channel
+        server_info = self.bot_database.get_server_twitch_info(server_id)
+        server = self.get_guild(int(server_id))
+        discord_username = None
+        user = None
+        if discord_user_id:
+            user = server.get_member(int(discord_user_id))
+            discord_username = user.display_name
+        twitch_channel = int(server_info[0])
+        twitch_live_role_id = int(server_info[1])
+        if twitch_channel:
+            channel = server.get_channel(twitch_channel)
+            channel.send(
+                "%s is playing magic right now: https://twitch.tv/%s" % (discord_username or username, username))
+        if twitch_live_role_id and user:
+            user.add_role(twitch_live_role_id)
+        return
+
+    async def twitch_user_went_offline(self, server_id, discord_user_id):
+        # todo: remove role if it exists
+        server_info = self.bot_database.get_server_twitch_info(server_id)
+        twitch_live_role_id = int(server_info[1])
+        server = self.get_guild(int(server_id))
+        if discord_user_id:
+            user = server.get_member(int(discord_user_id))
+            if twitch_live_role_id and user:
+                user.remove_roles(twitch_live_role_id)
+        return
+
     @staticmethod
     def get_emoji_tuple(raw_emoji):
         parts = raw_emoji.split(':')
@@ -469,16 +549,78 @@ class BrokkolyBot(commands.Bot):
                 role_id = self.bot_database.get_timeout_role_for_server(server_id)
                 await self.remove_user_timeout(user, server, role_id)
 
+    @tasks.loop(minutes=.5)
+    async def check_twitch_queue(self):
+        for twitch_event in self.twitch_queue:
+            username = twitch_event[0]
+            for server in self.bot_database.get_servers_for_twitch_user(username):
+                if twitch_event[1] == 'ONLINE':
+                    await self.twitch_user_went_online(username, server[0], server[1])
+                else:
+                    await self.twitch_user_went_offline(server[0], server[1])
+            self.twitch_queue.pop(0)
+
 
 @atexit.register
 def shutting_down():
     conn.close()
 
 
-bot = None
+@api.route('/api/Twitch/StreamChange', methods=['GET', 'POST'])
+def stream_change():
+    print("in stream_change")
+    if request.method == 'GET':
+        try:
+            query_data = request.get_json()
+            challenge = query_data['hub.challenge']
+        except:
+            return "", 200
+        if challenge:
+            print('responded to challenge')
+            return challenge, 201
+    else:
+        try:
+            username = request.args.get('username')
+            j = request.get_json()
+            if 'data' in j:
+                bot.handle_twitch_online(username)
+            else:
+                bot.handle_twitch_offline(username)
+        except:
+            return "print(query_data['data']['type']) excepted", 201
+        print("in stream_change")
+    return "asdf", 201
+
+
+@api.route('/test', methods=['GET'])
+def test():
+    return json.dumps({"success": True}), 201
+
+
+def test_stream_change():
+    print("testing stream change")
+    requests.post('http://127.0.0.1:5000/api/Twitch/StreamChange?username=Ylokkorb', json={
+        "data": [
+            {
+                "id": "0123456789",
+                "user_id": "5678",
+                "user_name": "wjdtkdqhs",
+                "game_id": "21779",
+                "community_ids": [],
+                "type": "live",
+                "title": "Best Stream Ever",
+                "viewer_count": 417,
+                "started_at": "2017-12-01T10:09:45Z",
+                "language": "en",
+                "thumbnail_url": "https://link/to/thumbnail.jpg"
+            }
+        ]
+    }
+                  )
+
 
 if __name__ == '__main__':
-    bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
+    bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL, twitch_id=TWITCH_ID, twitch_secret=TWITCH_SECRET)
     bot.remove_command("help")
 
 
@@ -516,4 +658,17 @@ if __name__ == '__main__':
         return
 
 
+    @bot.command()
+    @commands.check(bot.user_can_maintain_context)
+    async def twitchadd(ctx, *args):
+        await bot.handle_twitch_add(ctx, args)
+
+
+    # Thread(target=bot.run,args=(TOKEN)).start()
+    # print('started bot')
+    Thread(target=api.run).start()
+    print('started flask')
+    # time.sleep(2)
+    # test_stream_change()
     bot.run(TOKEN)
+    # test_stream_change()

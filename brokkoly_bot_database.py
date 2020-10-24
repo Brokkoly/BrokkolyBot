@@ -180,7 +180,7 @@ class BrokkolyBotDatabase:
         return results
 
     def get_all_twitch_users(self, server_id=''):
-        if (server_id):
+        if server_id:
             return self.get_all_twitch_users_from_server(server_id)
         cursor = self.conn.cursor()
         self.send_query(cursor, """
@@ -192,7 +192,7 @@ class BrokkolyBotDatabase:
         return results
 
     def get_all_twitch_users_from_server(self, server_id):
-        if (server_id):
+        if server_id:
             return self.get_all_twitch_users_from_server(server_id)
         cursor = self.conn.cursor()
         self.send_query(cursor, """
@@ -213,6 +213,29 @@ class BrokkolyBotDatabase:
                         (channel_name, server_id, user_id))
         cursor.close()
         self.conn.commit()
+
+    def get_servers_for_twitch_user(self, username):
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                                SELECT server_id,discord_user_id FROM twitch_users WHERE channel_name=%s;""",
+                        (username,))
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchall()
+        cursor.close()
+        return results
+
+    def get_server_twitch_info(self, server_id):
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                SELECT twitch_channel,twitch_live_role_id FROM SERVER_LIST WHERE SERVER_LIST.server_id=%s""",
+                        (str(server_id),))
+        result = cursor.fetchone()
+        cursor.close()
+        if not result:
+            return None
+        # print(result[0])
+        return result
 
     def get_message(self, server_id, command, to_search):
         """
