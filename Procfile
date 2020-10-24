@@ -1,2 +1,1 @@
-heroku ps:scale web=1
-worker: python brokkoly_bot.py
+web: python brokkoly_bot.py
