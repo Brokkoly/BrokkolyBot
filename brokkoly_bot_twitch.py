@@ -1,12 +1,6 @@
 # Some code provided by OnTheWind: https://github.com/OnTheWind/LegacyBot
-import asyncio
 
-import flask
 import requests
-from flask import request
-
-app = flask.Flask(__name__)
-app.config["DEBUG"] = True
 
 
 class BrokkolyBotTwitch:
@@ -47,23 +41,3 @@ class BrokkolyBotTwitch:
                         'hub.lease_seconds': 86400,
                         'hub.secret': self.twitch_secret
                         }
-
-
-@app.route('/api/Twitch/Callback', methods=['Get'])
-def respond():
-    print("Callback Was Called")
-    print(request.args)
-    return "text", 201
-
-
-@app.route('/test')
-def test():
-    return "text", 201
-
-
-if __name__ == '__main__':
-    twitch = BrokkolyBotTwitch(TWITCH_ID, TWITCH_SECRET)
-    # app.run()
-    loop = asyncio.get_event_loop()
-    # loop.run_until_complete(twitch.tryGetToken())
-    print("started")
