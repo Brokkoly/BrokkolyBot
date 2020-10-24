@@ -1,1 +1,1 @@
-web: python brokkoly_bot.py
+worker: python brokkoly_bot.py
