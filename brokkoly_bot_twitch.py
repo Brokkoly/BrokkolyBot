@@ -5,8 +5,6 @@ import flask
 import requests
 from flask import request
 
-from tokens import *
-
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
