@@ -30,6 +30,7 @@ class BrokkolyBotTwitch:
         response = requests.post(
             'https://id.twitch.tv/oauth2/token?&client_id=%s&client_secret=%s&grant_type=client_credentials' % (
                 self.twitch_id, self.twitch_secret))
+        j = response.json();
         if response.json()['access_token']:
             self.access_token = response.json()['access_token']
 
@@ -41,3 +42,22 @@ class BrokkolyBotTwitch:
                         'hub.lease_seconds': 86400,
                         'hub.secret': self.twitch_secret
                         }
+
+
+if __name__ == "__main__":
+    requests.post('https://localhost:44320/api/Twitch/StreamChanged', json={
+        "data": [
+            {
+                "id": "0123456789",
+                "user_id": "60294526",
+                "user_name": "ylokkorb",
+                "game_id": "21779",
+                "community_ids": [],
+                "type": "live",
+                "title": "Best Stream Ever",
+                "viewer_count": 417,
+                "started_at": "2017-12-01T10:09:45Z",
+                "language": "en",
+                "thumbnail_url": "https://link/to/thumbnail.jpg"
+            }
+        ]})

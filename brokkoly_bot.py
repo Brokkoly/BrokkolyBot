@@ -101,6 +101,8 @@ class BrokkolyBot(commands.Bot):
         self.prefixes = {}
         self.twitch = BrokkolyBotTwitch(twitch_id, twitch_secret)
         self.twitch_queue = []
+        intents = discord.Intents.default()
+        intents.members = True
 
         if not is_unit_test:
             self.token = token
@@ -108,7 +110,7 @@ class BrokkolyBot(commands.Bot):
             self.bot_database = BrokkolyBotDatabase(database_url)
             for r in self.bot_database.get_all_server_prefixes():
                 self.prefixes[int(r[0])] = r[1] or "!"
-            commands.Bot.__init__(self, command_prefix=self.prefix)
+            commands.Bot.__init__(self, command_prefix=self.prefix, intents=intents)
 
     def prefix(self, _, message):
         return self.prefixes.get(message.guild.id, '!')
@@ -664,11 +666,5 @@ if __name__ == '__main__':
         await bot.handle_twitch_add(ctx, args)
 
 
-    # Thread(target=bot.run,args=(TOKEN)).start()
-    # print('started bot')
-    Thread(target=api.run).start()
-    print('started flask')
-    # time.sleep(2)
-    # test_stream_change()
+    # Todo: start thread to refresh stream subscriptions every 24 hours
     bot.run(TOKEN)
-    # test_stream_change()
