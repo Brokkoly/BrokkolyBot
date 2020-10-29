@@ -191,6 +191,19 @@ class BrokkolyBotDatabase:
         cursor.close()
         return results
 
+    def get_twitch_user_for_server(self, server_id, channel_name, discord_user_id):
+        server_id = str(server_id)
+        discord_user_id = str(discord_user_id)
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                                        SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s AND (channel_name=%s OR discord_user_id=%s);""",
+                        (server_id, channel_name, discord_user_id))
+        results = None
+        if cursor.rowcount > 0:
+            results = cursor.fetchone()
+        cursor.close()
+        return results
+
     def get_all_twitch_users_from_server(self, server_id):
         if server_id:
             return self.get_all_twitch_users_from_server(server_id)
@@ -208,9 +221,34 @@ class BrokkolyBotDatabase:
         server_id = str(server_id)
         user_id = str(user_id)
         cursor = self.conn.cursor()
-        self.send_query(cursor,
-                        """INSERT INTO twitch_users (channel_name,server_id,discord_user_id) VALUES (%s, %s, %s);""",
-                        (channel_name, server_id, user_id))
+        self.send_query(cursor, """
+                                        SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s AND channel_name=%s;""",
+                        (str(server_id), channel_name))
+        if cursor.rowcount > 0:
+            # Check if it's already there
+            result = cursor.fetchone()
+            if result[2] == user_id:
+                return
+            else:
+                # Update the value
+                self.send_query(cursor, """
+                                                        UPDATE twitch_users SET discord_user_id=%s WHERE server_id=%s AND channel_name=%s;""",
+                                (user_id, server_id, channel_name))
+        else:
+            self.send_query(cursor,
+                            """INSERT INTO twitch_users (channel_name,server_id,discord_user_id) VALUES (%s, %s, %s);""",
+                            (channel_name, server_id, user_id))
+        cursor.close()
+        self.conn.commit()
+
+    def remove_twitch_user(self, server_id, channel_name="", user_id=""):
+        server_id = str(server_id)
+        user_id = str(user_id) or "0"
+        channel_name = channel_name or "0"
+        cursor = self.conn.cursor()
+        self.send_query(cursor, """
+                                        DELETE FROM twitch_users WHERE server_id=%s AND (channel_name=%s OR discord_user_id=%s);
+        """, (server_id, channel_name, user_id))
         cursor.close()
         self.conn.commit()
 

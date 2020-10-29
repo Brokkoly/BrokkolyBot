@@ -471,22 +471,52 @@ class BrokkolyBot(commands.Bot):
             self.bot_database.set_server_cooldown(session.server_id, parse_result)
 
     async def handle_twitch_add(self, ctx, args):
-        channel_name = args[1]
+        channel_name = args[0].lower()
+        if not channel_name or "@" in channel_name:
+            await ctx.message.channel.send("Error! Invalid twitch channel.")
+            return
         discord_user_id = ""
         if ctx.message.mentions and len(ctx.message.mentions) == 1:
             discord_user_id = ctx.message.mentions[0].id
         self.bot_database.add_twitch_user(ctx.message.guild.id, channel_name, discord_user_id)
-        # todo tell the server to refresh its streams
         # todo check if the channel is already tracked by the server
+        await send_refresh_message(channel_name, ctx.message.guild.id)
+        # todo tell the server to refresh its streams
+
+    async def handle_twitch_remove(self, ctx, args):
+        channel_name = args[0].lower()
+        if not channel_name or "@" in channel_name:
+            await ctx.message.channel.send("Error! Invalid twitch channel.")
+            return
+        guild = ctx.message.guild
+        twitch_info = self.bot_database.get_server_twitch_info(guild.id)
+        mentions = ctx.message.mentions
+        discord_user_id = ""
+        if len(mentions) > 0:
+            if len(mentions) > 1:
+                await ctx.message.channel.send("Error! You can only mention one person")
+                return
+            else:
+                user = mentions[0]
+                discord_user_id = user.id
+
+        twitch_user = self.bot_database.get_twitch_user_for_server(guild.id, channel_name, discord_user_id)
+        if discord_user_id and twitch_user and len(twitch_user) >= 2 and twitch_user[2]:
+            if len(twitch_info) >= 2 and twitch_info[1]:
+                twitch_role = ctx.message.guild.get_role(int(twitch_info[1]))
+                # need a member not just a user
+                await guild.get_member(discord_user_id).remove_roles(twitch_role)
+
+        self.bot_database.remove_twitch_user(ctx.message.guild.id, channel_name, discord_user_id)
 
     @staticmethod
     def get_emoji_tuple(raw_emoji):
         parts = raw_emoji.split(':')
         return parts[0].replace('<', ''), parts[2].replace('>', '')
 
-    @tasks.loop(hours=24)
+    @tasks.loop(hours=1)
     async def refresh_streams(self):
-        requests.get('https://brokkolybot.azurewebsites.net/api/Twitch/RefreshStreams')
+        await send_refresh_message()
 
     @tasks.loop(minutes=1.0)
     async def check_users_to_remove(self):
@@ -504,6 +534,13 @@ class BrokkolyBot(commands.Bot):
 @atexit.register
 def shutting_down():
     conn.close()
+
+
+async def send_refresh_message(username="", server_id=""):
+    url = 'https://brokkolybot.azurewebsites.net/api/Twitch/RefreshStreams'
+    if username and server_id:
+        url += '?username=%s&serverId=%s' % (username, server_id)
+    requests.get(url)
 
 
 if __name__ == '__main__':
@@ -547,6 +584,12 @@ if __name__ == '__main__':
     @commands.check(bot.user_can_maintain_context)
     async def twitchadd(ctx, *args):
         await bot.handle_twitch_add(ctx, args)
+
+
+    @bot.command()
+    @commands.check(bot.user_can_maintain_context)
+    async def twitchremove(ctx, *args):
+        await bot.handle_twitch_remove(ctx, args)
 
 
     # Todo: start thread to refresh stream subscriptions every 24 hours
