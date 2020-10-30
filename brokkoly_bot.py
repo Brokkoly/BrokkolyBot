@@ -541,6 +541,7 @@ async def send_refresh_message(username="", server_id=""):
     if username and server_id:
         url += '?username=%s&serverId=%s' % (username, server_id)
     requests.get(url)
+    print("Refreshed Streams")
 
 
 if __name__ == '__main__':
