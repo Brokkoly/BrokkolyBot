@@ -394,7 +394,7 @@ class BrokkolyBot(commands.Bot):
 
     async def add_user_timeout(self, user, timeout_time, server, role_id):
         await user.add_roles(server.get_role(role_id), reason="Timing out user")
-        until_time_ms = int(round(datetime.utcnow().timestamp() * 1000)) + timeout_time * 1000 * 60
+        until_time_ms = int(round(datetime.utcnow().timestamp() * 1000)) + timeout_time * 1000
         self.bot_database.add_user_timeout_to_database(server.id, user.id, until_time_ms)
         return
 
