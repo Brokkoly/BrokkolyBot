@@ -288,20 +288,20 @@ class BrokkolyBotDatabase:
             FROM COMMAND_LIST
             WHERE server_id = %s
                 AND command_string = %s
-                AND entry_value ILIKE %s"""
+                AND entry_value ILIKE %s """
             if not user_is_mod:
-                query += "\nAND NOT mod_only=1\n"
-            query += "ORDER BY RANDOM() LIMIT 1;"
+                query += "\nAND NOT mod_only=1"
+            query += "\nORDER BY RANDOM() LIMIT 1;"
             params = (str(server_id), command, "%%" + to_search + "%%")
         else:
             query = """
                     SELECT entry_value
                     FROM COMMAND_LIST
                     WHERE server_id=%s
-                        AND command_string=%s"""
+                        AND command_string=%s """
             if not user_is_mod:
-                query += "\nAND NOT mod_only=1\n"
-            query += "ORDER BY RANDOM() LIMIT 1;"
+                query += "\nAND NOT mod_only=1"
+            query += "\nORDER BY RANDOM() LIMIT 1;"
             params = (str(server_id), command)
 
         self.send_query(cursor, query, params)
