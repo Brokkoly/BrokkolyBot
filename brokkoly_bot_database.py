@@ -290,7 +290,7 @@ class BrokkolyBotDatabase:
                 AND command_string = %s
                 AND entry_value ILIKE %s"""
             if not user_is_mod:
-                query += "\nAND NOT mod_only\n"
+                query += "\nAND NOT mod_only=1\n"
             query += "ORDER BY RANDOM() LIMIT 1;"
             params = (str(server_id), command, "%%" + to_search + "%%")
         else:
@@ -300,7 +300,7 @@ class BrokkolyBotDatabase:
                     WHERE server_id=%s
                         AND command_string=%s"""
             if not user_is_mod:
-                query += "\nAND NOT mod_only\n"
+                query += "\nAND NOT mod_only=1\n"
             query += "ORDER BY RANDOM() LIMIT 1;"
             params = (str(server_id), command)
 
