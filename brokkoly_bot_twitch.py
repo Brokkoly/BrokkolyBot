@@ -10,8 +10,8 @@ class BrokkolyBotTwitch:
         self.twitch_secret = twitch_secret
         self.base_url = 'https://api.twitch.tv'
         self.try_get_token()
-        self.get_user_info('ylokkorb')
-        print(self.access_token)
+        # self.get_user_info('ylokkorb')
+        # print(self.access_token)
         # response=requests.get('https://api.twitch.tv/helix/users?id=ylokkorb')
 
     def get_user_info(self, username):

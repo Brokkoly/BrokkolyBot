@@ -11,7 +11,6 @@ from discord.ext import commands
 from discord.ext import tasks
 
 from brokkoly_bot_database import *
-from brokkoly_bot_twitch import BrokkolyBotTwitch
 
 # Todo: replace instances of server with guild
 
@@ -50,13 +49,13 @@ if token_spec is not None:
     TOKEN = tokens.TOKEN_TEST
     IS_TEST = True
     DATABASE_URL = tokens.DATABASE_URL
-    TWITCH_ID = tokens.TWITCH_ID
-    TWITCH_SECRET = tokens.TWITCH_SECRET
+    # TWITCH_ID = tokens.TWITCH_ID
+    # TWITCH_SECRET = tokens.TWITCH_SECRET
 else:
     TOKEN = os.environ['TOKEN']
     DATABASE_URL = os.environ['DATABASE_URL']
-    TWITCH_ID = os.environ['TWITCH_ID']
-    TWITCH_SECRET = os.environ['TWITCH_SECRET']
+    # TWITCH_ID = os.environ['TWITCH_ID']
+    # TWITCH_SECRET = os.environ['TWITCH_SECRET']
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
@@ -86,8 +85,7 @@ class BrokkolyBot(commands.Bot):
     protected_commands = ["help", "add", "otherservers", "cooldown", "timeout", "removetimeout",
                           "extractemoji"]
 
-    def __init__(self, is_test=False, token=None, database_url=None, is_unit_test=False, twitch_id='',
-                 twitch_secret=''):
+    def __init__(self, is_test=False, token=None, database_url=None, is_unit_test=False):
 
         self.timeout = {}
         self.maintenance = {}
@@ -96,8 +94,6 @@ class BrokkolyBot(commands.Bot):
         self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
         self.prefixes = {}
-        self.twitch = BrokkolyBotTwitch(twitch_id, twitch_secret)
-        self.twitch_queue = []
         intents = discord.Intents.default()
         intents.members = True
 
@@ -546,7 +542,7 @@ async def send_refresh_message(username="", server_id=""):
 
 
 if __name__ == '__main__':
-    bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL, twitch_id=TWITCH_ID, twitch_secret=TWITCH_SECRET)
+    bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
     bot.remove_command("help")
 
 
