@@ -29,7 +29,7 @@ class BrokkolyBotDatabase:
         self.send_query(cursor,
                         """INSERT INTO COMMAND_LIST (server_id, command_string, entry_value, mod_only) 
                         VALUES (%s,%s,%s,%s);""",
-                        (str(server_id), command, message, 'true' if mod_only else 'false'))
+                        (str(server_id), command, message, 1 if mod_only else 0))
         cursor.close()
         self.conn.commit()
         return True
