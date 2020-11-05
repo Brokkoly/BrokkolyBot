@@ -132,7 +132,8 @@ class BrokkolyBot(commands.Bot):
 
         command = message.content.lower()[1:]
         command, to_search = self.parse_search(command)
-        msg = self.bot_database.get_message(message.guild.id, command, to_search)
+        msg = self.bot_database.get_message(message.guild.id, command, to_search,
+                                            user_is_mod=self.user_can_maintain(message))
         if msg == "":
             return
         if message.guild.id in self.last_message_time:
@@ -171,7 +172,7 @@ class BrokkolyBot(commands.Bot):
 
     # endregion events
 
-    async def handle_add(self, message, command, new_entry):
+    async def handle_add(self, message, command, new_entry, mod_only=False):
         """add the value in message to the the database"""
         server_id = message.guild.id
         if self.user_can_maintain(message):
@@ -188,7 +189,7 @@ class BrokkolyBot(commands.Bot):
             if error:
                 await self.reject_message(message, error)
                 return
-            if self.bot_database.add_command(server_id, command, new_entry):
+            if self.bot_database.add_command(server_id, command, new_entry, mod_only=mod_only):
                 await message.add_reaction(self.get_emoji(445805262880899075))
                 return
         else:
@@ -553,6 +554,12 @@ if __name__ == '__main__':
     @commands.check(bot.user_can_maintain_context)
     async def add(ctx, *args):
         await bot.handle_add(ctx.message, args[0].lower(), " ".join(args[1:]))
+
+
+    @bot.command(rest_is_raw=True)
+    @commands.check(bot.user_can_maintain_context)
+    async def addmod(ctx, *args):
+        await bot.handle_add(ctx.message, args[0].lower(), " ".join(args[1:]), mod_only=True)
 
 
     @bot.command()

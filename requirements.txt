@@ -1,5 +1,4 @@
 discord.py==1.5.1
 psycopg2==2.8.6
-pytest==3.0.7
+pytest==6.1.2
 requests==2.24.0
-flask==1.1.2

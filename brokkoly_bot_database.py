@@ -1,6 +1,3 @@
-#!/usr/bin/python
-
-
 import psycopg2
 
 
@@ -8,9 +5,10 @@ class BrokkolyBotDatabase:
     def __init__(self, database_url):
         self.conn = psycopg2.connect(database_url, sslmode='require')
 
-    def add_command(self, server_id, command, message):
+    def add_command(self, server_id, command, message, mod_only=False):
         """
         Adds a new command to the bot
+        :param mod_only:
         :param server_id:
         :param command:
         :param message:
@@ -29,8 +27,9 @@ class BrokkolyBotDatabase:
             cursor.close()
             return False
         self.send_query(cursor,
-                        """ INSERT INTO COMMAND_LIST (server_id, command_string, entry_value) VALUES (%s,%s,%s)""",
-                        (str(server_id), command, message))
+                        """INSERT INTO COMMAND_LIST (server_id, command_string, entry_value, mod_only) 
+                        VALUES (%s,%s,%s,%s);""",
+                        (str(server_id), command, message, 'true' if mod_only else 'false'))
         cursor.close()
         self.conn.commit()
         return True
@@ -195,8 +194,8 @@ class BrokkolyBotDatabase:
         server_id = str(server_id)
         discord_user_id = str(discord_user_id)
         cursor = self.conn.cursor()
-        self.send_query(cursor, """
-                                        SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s AND (channel_name=%s OR discord_user_id=%s);""",
+        self.send_query(cursor, """SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s 
+        AND (channel_name=%s OR discord_user_id=%s);""",
                         (server_id, channel_name, discord_user_id))
         results = None
         if cursor.rowcount > 0:
@@ -221,8 +220,8 @@ class BrokkolyBotDatabase:
         server_id = str(server_id)
         user_id = str(user_id)
         cursor = self.conn.cursor()
-        self.send_query(cursor, """
-                                        SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s AND channel_name=%s;""",
+        self.send_query(cursor, """SELECT channel_name,server_id,discord_user_id FROM twitch_users WHERE server_id=%s 
+        AND channel_name=%s;""",
                         (str(server_id), channel_name))
         if cursor.rowcount > 0:
             # Check if it's already there
@@ -231,12 +230,13 @@ class BrokkolyBotDatabase:
                 return
             else:
                 # Update the value
-                self.send_query(cursor, """
-                                                        UPDATE twitch_users SET discord_user_id=%s WHERE server_id=%s AND channel_name=%s;""",
+                self.send_query(cursor, """UPDATE twitch_users SET discord_user_id=%s WHERE server_id=%s AND 
+                channel_name=%s;""",
                                 (user_id, server_id, channel_name))
         else:
             self.send_query(cursor,
-                            """INSERT INTO twitch_users (channel_name,server_id,discord_user_id) VALUES (%s, %s, %s);""",
+                            """INSERT INTO twitch_users (channel_name,server_id,discord_user_id) 
+                            VALUES (%s, %s, %s);""",
                             (channel_name, server_id, user_id))
         cursor.close()
         self.conn.commit()
@@ -246,16 +246,14 @@ class BrokkolyBotDatabase:
         user_id = str(user_id) or "0"
         channel_name = channel_name or "0"
         cursor = self.conn.cursor()
-        self.send_query(cursor, """
-                                        DELETE FROM twitch_users WHERE server_id=%s AND (channel_name=%s OR discord_user_id=%s);
-        """, (server_id, channel_name, user_id))
+        self.send_query(cursor, """DELETE FROM twitch_users WHERE server_id=%s AND (channel_name=%s OR 
+        discord_user_id=%s);""", (server_id, channel_name, user_id))
         cursor.close()
         self.conn.commit()
 
     def get_servers_for_twitch_user(self, username):
         cursor = self.conn.cursor()
-        self.send_query(cursor, """
-                                SELECT server_id,discord_user_id FROM twitch_users WHERE channel_name=%s;""",
+        self.send_query(cursor, """SELECT server_id,discord_user_id FROM twitch_users WHERE channel_name=%s;""",
                         (username,))
         results = None
         if cursor.rowcount > 0:
@@ -275,7 +273,7 @@ class BrokkolyBotDatabase:
         # print(result[0])
         return result
 
-    def get_message(self, server_id, command, to_search):
+    def get_message(self, server_id, command, to_search, user_is_mod=False):
         """
         :param server_id:
         :param command:
@@ -290,20 +288,20 @@ class BrokkolyBotDatabase:
             FROM COMMAND_LIST
             WHERE server_id = %s
                 AND command_string = %s
-                AND entry_value ILIKE %s
-            ORDER BY RANDOM()
-            LIMIT 1;
-            """
+                AND entry_value ILIKE %s"""
+            if not user_is_mod:
+                query += "\nAND NOT mod_only\n"
+            query += "ORDER BY RANDOM() LIMIT 1;"
             params = (str(server_id), command, "%%" + to_search + "%%")
         else:
             query = """
                     SELECT entry_value
                     FROM COMMAND_LIST
                     WHERE server_id=%s
-                        AND command_string=%s
-                    ORDER BY RANDOM()
-                    LIMIT 1;
-                    """
+                        AND command_string=%s"""
+            if not user_is_mod:
+                query += "\nAND NOT mod_only\n"
+            query += "ORDER BY RANDOM() LIMIT 1;"
             params = (str(server_id), command)
 
         self.send_query(cursor, query, params)
