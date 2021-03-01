@@ -358,7 +358,7 @@ class BrokkolyBot(commands.Bot):
             return ""
 
     async def get_message_from_url(self, message):
-        url = re.findall(r'https://(?:canary\.)?discordapp\.com/channels/[0-9]+/[0-9]+/[0-9]+', message.content)
+        url = re.findall(r'https://(?:canary\.)?discord\.com/channels/[0-9]+/[0-9]+/[0-9]+', message.content)
         if (not url) or (not url[0]):
             return ""
         parts = url[0].split('/')
