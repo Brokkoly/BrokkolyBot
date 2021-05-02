@@ -566,7 +566,7 @@ async def send_refresh_message(username="", server_id=""):
 
 if __name__ == '__main__':
     bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
-    slash = SlashCommand(bot, sync_commands=False, override_type=True)
+    slash = SlashCommand(bot, sync_commands=True, override_type=True)
     bot.remove_command("help")
 
 
@@ -640,7 +640,7 @@ if __name__ == '__main__':
                 if (c["name"] == "populatecommands"):
                     continue
                 slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id])
-
+        slash.sync_all_commands()
 
     # @bot.listen('on_slash_command')
     async def on_slash_command(ctx: SlashContext):
@@ -649,7 +649,7 @@ if __name__ == '__main__':
         # await bot.handle_slash_command(ctx)
 
 
-    @slash.slash(name="populateCommands", guild_ids=[329746807599136769])
+    @slash.slash(name="populateCommands", guild_ids=[329746807599136769, 718854497245462588])
     async def populateCommands(ctx: SlashContext):
         await ctx.defer()
         guild_id = ctx.guild.id
