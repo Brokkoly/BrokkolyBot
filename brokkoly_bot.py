@@ -10,6 +10,9 @@ import requests
 from discord.ext import commands
 from discord.ext import tasks
 
+from discord_slash import SlashCommand, SlashContext, utils
+from discord_slash.utils import manage_commands
+
 from brokkoly_bot_database import *
 
 # Todo: replace instances of server with guild
@@ -81,6 +84,12 @@ game_jazz_id = 639124326385188864
 bot = None
 
 
+def get_bot_id(is_test: bool):
+    if (is_test):
+        return brokkoly_bot_test_id
+    return brokkoly_bot_id
+
+
 class BrokkolyBot(commands.Bot):
     protected_commands = ["help", "add", "otherservers", "cooldown", "timeout", "removetimeout",
                           "extractemoji"]
@@ -104,11 +113,33 @@ class BrokkolyBot(commands.Bot):
             for r in self.bot_database.get_all_server_prefixes():
                 self.prefixes[int(r[0])] = r[1] or "!"
             commands.Bot.__init__(self, command_prefix=self.prefix, intents=intents)
+            # self.add_listener(name="on_slash_command",func=self.on_slash_command)
 
     def prefix(self, _, message):
         return self.prefixes.get(message.guild.id, '!')
 
     # region events
+    # @client.event
+    # async def on_slash_command(self, ctx: SlashContext):
+    #     print("got slash command")
+    #     if (ctx.command == "populatecommands"):
+    #         return
+    #     ctx.defer()
+    #     msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.message,
+    #                                         user_is_mod=self.user_can_maintain(ctx.message))
+    #     ctx.send(msg)
+    #     print(ctx.guild.id)
+    #     print(ctx.message)
+
+    @client.event
+    async def on_slash_command(self, ctx: SlashContext):
+        if (ctx.command == "populatecommands"):
+            return
+        await ctx.defer()
+        msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.message,
+                                            user_is_mod=self.user_can_maintain(ctx.author, ctx.channel, ctx.guild_id))
+        await ctx.send(msg)
+
     @client.event
     async def on_message(self, message):
         """Fires every time a user sends a message in an associated server.
@@ -129,7 +160,8 @@ class BrokkolyBot(commands.Bot):
         command = message.content.lower()[1:]
         command, to_search = self.parse_search(command)
         msg = self.bot_database.get_message(message.guild.id, command, to_search,
-                                            user_is_mod=self.user_can_maintain(message))
+                                            user_is_mod=self.user_can_maintain(message.author, message.channel,
+                                                                               message.guild.id))
         if msg == "":
             return
         if message.guild.id in self.last_message_time:
@@ -140,21 +172,6 @@ class BrokkolyBot(commands.Bot):
                 return
         self.last_message_time[message.guild.id] = message.created_at
         await message.channel.send(msg)
-
-    @client.event
-    async def on_ready(self):
-        """Fires once the discord bot is ready.
-        Notify the test server that the bot has started
-        """
-        await self.get_channel(bot_ui_channel_id).send("Starting Up")
-        await self.get_channel(bot_ui_channel_id).send("Online")
-        print('Logged in as')
-        print(self.user.name)
-        print(self.user.id)
-        print('------')
-        self.check_users_to_remove.start()
-        self.refresh_streams.start()
-        await self.update_timeout_role_for_all_servers()
 
     @client.event
     async def on_guild_join(self, guild):
@@ -442,14 +459,20 @@ class BrokkolyBot(commands.Bot):
             await self.update_timeout_role_for_server(server, role)
 
     def user_can_maintain_context(self, ctx):
-        return self.user_can_maintain(ctx.message)
+        return self.user_can_maintain(ctx.author, ctx.channel, ctx.guild.id)
 
-    def user_can_maintain(self, message):
-        author = message.author
-        if author.permissions_in(message.channel).manage_guild:
+    def user_can_maintain(self, author, channel, guild_id):
+        if (author.permissions_in(channel).manage_guild):
             return True
-        if self.user_has_bot_manager_role(author, message.guild.id):
+        if self.user_has_bot_manager_role(author, guild_id):
             return True
+
+    # def user_can_maintain(self, message):
+    #     author = message.author
+    #     if author.permissions_in(message.channel).manage_guild:
+    #         return True
+    #     if self.user_has_bot_manager_role(author, message.guild.id):
+    #         return True
 
     def user_has_bot_manager_role(self, author, server_id):
         bot_manager_role_id = self.bot_database.get_manager_role_for_server(server_id)
@@ -543,6 +566,7 @@ async def send_refresh_message(username="", server_id=""):
 
 if __name__ == '__main__':
     bot = BrokkolyBot(IS_TEST, token=TOKEN, database_url=DATABASE_URL)
+    slash = SlashCommand(bot, sync_commands=False, override_type=True)
     bot.remove_command("help")
 
 
@@ -594,6 +618,55 @@ if __name__ == '__main__':
     @commands.check(bot.user_can_maintain_context)
     async def twitchremove(ctx, *args):
         await bot.handle_twitch_remove(ctx, args)
+
+
+    @bot.event
+    async def on_ready():
+        """Fires once the discord bot is ready.
+        Notify the test server that the bot has started
+        """
+        await bot.get_channel(bot_ui_channel_id).send("Starting Up")
+        await bot.get_channel(bot_ui_channel_id).send("Online")
+        print('Logged in as')
+        print(bot.user.name)
+        print(bot.user.id)
+        print('------')
+        bot.check_users_to_remove.start()
+        bot.refresh_streams.start()
+        await bot.update_timeout_role_for_all_servers()
+        for g in bot.guilds:
+            commands = await manage_commands.get_all_commands(get_bot_id(IS_TEST), TOKEN, g.id)
+            for c in commands:
+                if (c["name"] == "populatecommands"):
+                    continue
+                slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id])
+
+
+    # @bot.listen('on_slash_command')
+    async def on_slash_command(ctx: SlashContext):
+        a = 1
+        # print("in on_slash_command")
+        # await bot.handle_slash_command(ctx)
+
+
+    @slash.slash(name="populateCommands", guild_ids=[329746807599136769])
+    async def populateCommands(ctx: SlashContext):
+        await ctx.defer()
+        guild_id = ctx.guild.id
+        commands = bot.bot_database.get_all_command_strings(guild_id)
+        print(guild_id)
+        for c in commands:
+            command = c[0]
+            print(c[0])
+            await manage_commands.add_slash_command(
+                bot_id=get_bot_id(IS_TEST),
+                bot_token=TOKEN,
+                guild_id=guild_id,
+                cmd_name=command,
+                description=command
+            )
+            slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id])
+        await ctx.send(content="Commands Populated")
 
 
     # Todo: start thread to refresh stream subscriptions every 24 hours
