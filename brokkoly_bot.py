@@ -640,7 +640,7 @@ if __name__ == '__main__':
                 if (c["name"] == "populatecommands"):
                     continue
                 slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id])
-        slash.sync_all_commands()
+        await slash.sync_all_commands()
 
     # @bot.listen('on_slash_command')
     async def on_slash_command(ctx: SlashContext):
