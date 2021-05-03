@@ -641,12 +641,15 @@ if __name__ == '__main__':
             for c in commands:
                 if (c["name"] == "populatecommands"):
                     continue
-                slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=[{
-                    "name": "search",
-                    "description": "A substring to search for",
-                    "type": 3,
-                    "required": "false"
-                }])
+                try:
+                    slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=[{
+                        "name": "search",
+                        "description": "A substring to search for",
+                        "type": 3,
+                        "required": "false"
+                    }])
+                except(error.DuplicateCommand):
+                    continue
         await slash.sync_all_commands()
         await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
