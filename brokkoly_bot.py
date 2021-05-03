@@ -649,7 +649,7 @@ if __name__ == '__main__':
         await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
     # @bot.listen('on_slash_command')
-    async def on_slash_command(ctx: SlashContext, *args):
+    async def on_slash_command(ctx: SlashContext, *args, **kwargs):
         a = 1
         # print("in on_slash_command")
         # await bot.handle_slash_command(ctx)
