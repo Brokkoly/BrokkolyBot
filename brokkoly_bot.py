@@ -10,7 +10,7 @@ import requests
 from discord.ext import commands
 from discord.ext import tasks
 
-from discord_slash import SlashCommand, SlashContext, utils
+from discord_slash import SlashCommand, SlashContext, error
 from discord_slash.utils import manage_commands
 
 from brokkoly_bot_database import *
@@ -136,7 +136,7 @@ class BrokkolyBot(commands.Bot):
         if (ctx.command == "populatecommands"):
             return
         await ctx.defer()
-        msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.message,
+        msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.kwargs.get("search"),
                                             user_is_mod=self.user_can_maintain(ctx.author, ctx.channel, ctx.guild_id))
         await ctx.send(msg)
 
@@ -639,8 +639,14 @@ if __name__ == '__main__':
             for c in commands:
                 if (c["name"] == "populatecommands"):
                     continue
-                slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id])
+                slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=[{
+                    "name": "search",
+                    "description": "A substring to search for",
+                    "type": 3,
+                    "required": "false"
+                }])
         await slash.sync_all_commands()
+        await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
     # @bot.listen('on_slash_command')
     async def on_slash_command(ctx: SlashContext):
@@ -650,7 +656,7 @@ if __name__ == '__main__':
 
 
     @slash.slash(name="populateCommands")
-    async def populateCommands(ctx: SlashContext):
+    async def populateCommands(ctx: SlashContext, ):
         await ctx.defer()
         guild_id = ctx.guild.id
         commands = bot.bot_database.get_all_command_strings(guild_id)
@@ -658,14 +664,26 @@ if __name__ == '__main__':
         for c in commands:
             command = c[0]
             print(c[0])
-            await manage_commands.add_slash_command(
-                bot_id=get_bot_id(IS_TEST),
-                bot_token=TOKEN,
-                guild_id=guild_id,
-                cmd_name=command,
-                description=command
-            )
-            slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id])
+            try:
+                await manage_commands.add_slash_command(
+                    bot_id=get_bot_id(IS_TEST),
+                    bot_token=TOKEN,
+                    guild_id=guild_id,
+                    cmd_name=command,
+                    description=command,
+                    options=[{
+                        "name": "search",
+                        "description": "A substring to search for",
+                        "type": 3,
+                        "required": "false"
+                    }]
+                )
+            except(error.DuplicateCommand):
+                pass
+            try:
+                slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id])
+            except:
+                pass
         await ctx.send(content="Commands Populated")
 
 
