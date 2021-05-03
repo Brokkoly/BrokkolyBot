@@ -190,7 +190,7 @@ class BrokkolyBot(commands.Bot):
     async def handle_add(self, message, command, new_entry, mod_only=False):
         """add the value in message to the the database"""
         server_id = message.guild.id
-        if self.user_can_maintain(message):
+        if self.user_can_maintain(message.author, message.channel, message.guild.id):
             if message.mentions or message.role_mentions or message.mention_everyone:
                 await self.reject_message(message, NO_MENTIONS_ALLOWED_ERROR
                                           )
