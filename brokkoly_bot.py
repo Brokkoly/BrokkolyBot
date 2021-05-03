@@ -138,6 +138,8 @@ class BrokkolyBot(commands.Bot):
         await ctx.defer()
         msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.kwargs.get("search"),
                                             user_is_mod=self.user_can_maintain(ctx.author, ctx.channel, ctx.guild_id))
+        if (not msg):
+            msg = "Couldn't find " + ctx.kwargs.get("search")
         await ctx.send(msg)
 
     @client.event
