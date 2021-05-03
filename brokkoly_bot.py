@@ -649,14 +649,14 @@ if __name__ == '__main__':
         await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
     # @bot.listen('on_slash_command')
-    async def on_slash_command(ctx: SlashContext):
+    async def on_slash_command(ctx: SlashContext, *args):
         a = 1
         # print("in on_slash_command")
         # await bot.handle_slash_command(ctx)
 
 
     @slash.slash(name="populateCommands")
-    async def populateCommands(ctx: SlashContext, ):
+    async def populateCommands(ctx: SlashContext):
         await ctx.defer()
         guild_id = ctx.guild.id
         commands = bot.bot_database.get_all_command_strings(guild_id)
