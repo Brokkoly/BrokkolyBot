@@ -638,19 +638,24 @@ if __name__ == '__main__':
         bot.refresh_streams.start()
         await bot.update_timeout_role_for_all_servers()
         for g in bot.guilds:
-            commands = await manage_commands.get_all_commands(get_bot_id(IS_TEST), TOKEN, g.id)
-            for c in commands:
-                if (c["name"] == "populatecommands"):
-                    continue
-                try:
-                    slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=[{
-                        "name": "search",
-                        "description": "A substring to search for",
-                        "type": 3,
-                        "required": "false"
-                    }])
-                except(error.DuplicateCommand):
-                    continue
+            try:
+              commands = await manage_commands.get_all_commands(bot_id=get_bot_id(IS_TEST),bot_token=TOKEN, guild_id=g.id)
+              for c in commands:
+                  if (c["name"] == "populatecommands"):
+                      continue
+                  try:
+                      slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=[{
+                          "name": "search",
+                          "description": "A substring to search for",
+                          "type": 3,
+                          "required": "false"
+                      }])
+                  except(error.DuplicateCommand):
+                      continue
+            except:
+              print("Guild Failed: "+g.id)
+              print("Guild Failed: "+g.name)
+              continue
         await slash.sync_all_commands()
         await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
