@@ -22,7 +22,7 @@ BANG_NOT_NEEDED_WARNING = "Warning! \"!\" is no longer necessary when adding " \
                           "new commands, and will no longer be accepted in the future"
 INSUFFICIENT_PRIVILEGES_ERROR = "Error! Insufficient privileges to add."
 PROTECTED_COMMAND_ERROR = "Error! That is a protected command"
-NEW_VALUE_TOO_LONG_ERROR = "Error! Message cannot be longer than 500 characters."
+NEW_VALUE_TOO_LONG_ERROR = "Error! Message cannot be longer than 700 characters."
 COMMAND_TOO_LONG_ERROR = "Error! Command cannot be longer than 20 characters."
 EXPECTED_SYNTAX_ERROR = "Error! Expected \"!add <command length at least 3> <message>\"."
 CAN_ONLY_CONTAIN_LETTERS_ERROR = "Error! Command can only contain letters"
@@ -217,7 +217,7 @@ class BrokkolyBot(commands.Bot):
             return EXPECTED_SYNTAX_ERROR
         if len(command) >= 20:
             return COMMAND_TOO_LONG_ERROR
-        if len(new_entry) > 500:
+        if len(new_entry) > 700:
             return NEW_VALUE_TOO_LONG_ERROR
         if command in self.protected_commands:
             return PROTECTED_COMMAND_ERROR
