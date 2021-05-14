@@ -657,7 +657,7 @@ if __name__ == '__main__':
 
     # @bot.listen('on_slash_command')
     async def on_slash_command(ctx: SlashContext, *args, **kwargs):
-        a = 1
+        pass
         # print("in on_slash_command")
         # await bot.handle_slash_command(ctx)
 
@@ -690,7 +690,7 @@ if __name__ == '__main__':
 
     @slash.slash(name="populateCommands")
     async def populateCommands(ctx: SlashContext):
-        await ctx.defer()
+        await ctx.defer(hidden=True)
         guild_id = ctx.guild.id
         commands = bot.bot_database.get_all_command_strings(guild_id)
         print(guild_id)
@@ -699,7 +699,7 @@ if __name__ == '__main__':
             print(c[0])
             await add_manage(guild_id, command)
             add_slash(guild_id, command)
-        await ctx.send(content="Commands Populated")
+        await ctx.send(content="Commands Populated", hidden=True)
 
 
     # Todo: start thread to refresh stream subscriptions every 24 hours
