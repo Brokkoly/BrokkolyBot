@@ -576,7 +576,8 @@ if __name__ == '__main__':
     @commands.check(bot.user_can_maintain_context)
     async def add(ctx, *args):
         await bot.handle_add(ctx.message, args[0].lower(), " ".join(args[1:]))
-
+        await add_manage(ctx.message.guild.id, args[0].lower())
+        add_slash(ctx.message.guild.id, args[0].lower())
 
     @bot.command(rest_is_raw=True)
     @commands.check(bot.user_can_maintain_context)
@@ -653,11 +654,38 @@ if __name__ == '__main__':
         await slash.sync_all_commands()
         await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
+
     # @bot.listen('on_slash_command')
     async def on_slash_command(ctx: SlashContext, *args, **kwargs):
         a = 1
         # print("in on_slash_command")
         # await bot.handle_slash_command(ctx)
+
+
+    async def add_manage(guild_id, command):
+        try:
+            await manage_commands.add_slash_command(
+                bot_id=get_bot_id(IS_TEST),
+                bot_token=TOKEN,
+                guild_id=guild_id,
+                cmd_name=command,
+                description=command,
+                options=[{
+                    "name": "search",
+                    "description": "A substring to search for",
+                    "type": 3,
+                    "required": "false"
+                }]
+            )
+        except(error.DuplicateCommand):
+            pass
+
+
+    def add_slash(guild_id, command):
+        try:
+            slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id])
+        except:
+            pass
 
 
     @slash.slash(name="populateCommands")
@@ -669,26 +697,8 @@ if __name__ == '__main__':
         for c in commands:
             command = c[0]
             print(c[0])
-            try:
-                await manage_commands.add_slash_command(
-                    bot_id=get_bot_id(IS_TEST),
-                    bot_token=TOKEN,
-                    guild_id=guild_id,
-                    cmd_name=command,
-                    description=command,
-                    options=[{
-                        "name": "search",
-                        "description": "A substring to search for",
-                        "type": 3,
-                        "required": "false"
-                    }]
-                )
-            except(error.DuplicateCommand):
-                pass
-            try:
-                slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id])
-            except:
-                pass
+            await add_manage(guild_id, command)
+            add_slash(guild_id, command)
         await ctx.send(content="Commands Populated")
 
 
