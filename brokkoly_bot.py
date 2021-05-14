@@ -653,7 +653,7 @@ if __name__ == '__main__':
                   except(error.DuplicateCommand):
                       continue
             except:
-              print("Guild Failed: "+g.id)
+              print("Guild Failed: "+str(g.id))
               print("Guild Failed: "+g.name)
               continue
         await slash.sync_all_commands()
