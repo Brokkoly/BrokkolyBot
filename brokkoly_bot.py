@@ -12,8 +12,10 @@ from discord.ext import tasks
 
 from discord_slash import SlashCommand, SlashContext, error
 from discord_slash.utils import manage_commands
+from discord_slash.model import *
 
 from brokkoly_bot_database import *
+from command import *
 
 # Todo: replace instances of server with guild
 
@@ -579,6 +581,7 @@ if __name__ == '__main__':
         await add_manage(ctx.message.guild.id, args[0].lower())
         add_slash(ctx.message.guild.id, args[0].lower())
 
+
     @bot.command(rest_is_raw=True)
     @commands.check(bot.user_can_maintain_context)
     async def addmod(ctx, *args):
@@ -643,15 +646,22 @@ if __name__ == '__main__':
                 if (c["name"] == "populatecommands"):
                     continue
                 try:
-                    slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=[{
-                        "name": "search",
-                        "description": "A substring to search for",
-                        "type": 3,
-                        "required": "false"
-                    }])
+                    slash.add_slash_command(on_slash_command, c["name"], guild_ids=[g.id], options=c["options"])
                 except(error.DuplicateCommand):
                     continue
+
+        # cmd = Command("choicestest","choicesTest",[{
+        #     "name": "choicename",
+        #     "value": "choice_value"
+        # },{
+        #     "name": "choicename2",
+        #     "value": "choice_value2"
+        # }])
+        # await add_manage(225374061386006528,cmd)
+        # add_slash(225374061386006528,cmd)
+
         await slash.sync_all_commands()
+
         await bot.get_channel(bot_ui_channel_id).send("Commands Ready")
 
 
@@ -662,20 +672,15 @@ if __name__ == '__main__':
         # await bot.handle_slash_command(ctx)
 
 
-    async def add_manage(guild_id, command):
+    async def add_manage(guild_id, command: Command):
         try:
             await manage_commands.add_slash_command(
                 bot_id=get_bot_id(IS_TEST),
                 bot_token=TOKEN,
                 guild_id=guild_id,
-                cmd_name=command,
-                description=command,
-                options=[{
-                    "name": "search",
-                    "description": "A substring to search for",
-                    "type": 3,
-                    "required": "false"
-                }]
+                cmd_name=command.name,
+                description=command.description,
+                options=command.options
             )
         except(error.DuplicateCommand):
             pass
@@ -683,22 +688,31 @@ if __name__ == '__main__':
 
     def add_slash(guild_id, command):
         try:
-            slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id])
+            slash.add_slash_command(on_slash_command, command, guild_ids=[guild_id], name=command.name,
+                                    description=command.description, options=command.options)
         except:
             pass
 
 
-    @slash.slash(name="populateCommands")
+    @slash.slash(name="populateCommands", guild_ids=[225374061386006528])
     async def populateCommands(ctx: SlashContext):
         await ctx.defer()
         guild_id = ctx.guild.id
-        commands = bot.bot_database.get_all_command_strings(guild_id)
+        # commands = bot.bot_database.get_all_command_strings(guild_id)
+        full_commands = bot.bot_database.get_all_commands(guild_id)
+        command_dict = {}
         print(guild_id)
-        for c in commands:
-            command = c[0]
-            print(c[0])
-            await add_manage(guild_id, command)
-            add_slash(guild_id, command)
+        for c in full_commands:
+            if not command_dict.get(c[1]):
+                command_dict[c[1]] = Command(c[1], c[1], [c[2]]);
+            command_dict[c[1]].addChoice(c[2])
+
+        # print(command_dict)
+        for command in command_dict.keys():
+            print(command_dict[command])
+            # print(command_dict[command].options)
+            await add_manage(guild_id, command_dict[command])
+            add_slash(guild_id, command_dict[command])
         await ctx.send(content="Commands Populated")
 
 
