@@ -641,8 +641,8 @@ if __name__ == '__main__':
         bot.check_users_to_remove.start()
         bot.refresh_streams.start()
         await bot.update_timeout_role_for_all_servers()
-        await slash.sync_all_commands()
         for g in bot.guilds:
+            print("Guild:\nid: " + str(g.id) + "\nname: " + bot.get_guild(g.id).name)
             commands = await manage_commands.get_all_commands(bot_id=get_bot_id(IS_TEST),bot_token=TOKEN, guild_id=g.id)
             for c in commands:
                 if (c["name"] == "populatecommands"):
