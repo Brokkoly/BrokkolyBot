@@ -138,6 +138,7 @@ class BrokkolyBot(commands.Bot):
         if (ctx.command == "populatecommands"):
             return
         await ctx.defer()
+        search = ctx.kwargs.get("search") or ''
         msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.kwargs.get("search"),
                                             user_is_mod=self.user_can_maintain(ctx.author, ctx.channel, ctx.guild_id))
         if (not msg):
