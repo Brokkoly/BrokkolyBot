@@ -25,7 +25,7 @@ class Command:
                 "name": nameUse,
                 "value": nameUse
             })
-        print(self.options[0]["choices"])
+        # print(self.options[0]["choices"])
 
         # def toJson(self, dump=True):
         #     optionsJson = []
