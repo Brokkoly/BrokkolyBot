@@ -469,10 +469,11 @@ class BrokkolyBot(commands.Bot):
         return self.user_can_maintain(ctx.author, ctx.channel, ctx.guild.id)
 
     def user_can_maintain(self, author, channel, guild_id):
-        if (author.permissions_in(channel).manage_guild):
+        if channel and author.permissions_in(channel).manage_guild:
             return True
         if self.user_has_bot_manager_role(author, guild_id):
             return True
+        return False
 
     # def user_can_maintain(self, message):
     #     author = message.author
