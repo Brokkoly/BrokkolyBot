@@ -238,6 +238,7 @@ class BrokkolyBot(commands.Bot):
                    "!extractemoji - Get the URL for the emojis in the rest of the message\n" \
                    "See my code: <https://github.com/Brokkoly/BrokkolyBot>\n" \
                    "             <https://github.com/Brokkoly/BrokkolyBotFrontend>\n" \
+                   "Support me: https://ko-fi.com/brokkoly" \
                    "To see all commands and responses,please go to https://brokkolybot.azurewebsites.net\n" \
                    "Plus the following commands: "
         for command in self.bot_database.get_all_command_strings(message.guild.id):
