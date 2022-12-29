@@ -139,10 +139,10 @@ class BrokkolyBot(commands.Bot):
             return
         await ctx.defer()
         search = ctx.kwargs.get("search") or ''
-        msg = self.bot_database.get_message(ctx.guild_id, ctx.command, ctx.kwargs.get("search"),
+        msg = self.bot_database.get_message(ctx.guild_id, ctx.command, search,
                                             user_is_mod=self.user_can_maintain(ctx.author, ctx.channel, ctx.guild_id))
         if (not msg):
-            msg = "Couldn't find " + ctx.kwargs.get("search")
+            msg = "Couldn't find " + search
             await ctx.send(msg, hidden=True)
             return
         await ctx.send(msg)
@@ -586,6 +586,7 @@ if __name__ == '__main__':
         await add_manage(ctx.message.guild.id, args[0].lower())
         add_slash(ctx.message.guild.id, args[0].lower())
 
+
     @bot.command(rest_is_raw=True)
     @commands.check(bot.user_can_maintain_context)
     async def addmod(ctx, *args):
@@ -646,7 +647,8 @@ if __name__ == '__main__':
         await bot.update_timeout_role_for_all_servers()
         for g in bot.guilds:
             print("Guild:\nid: " + str(g.id) + "\nname: " + bot.get_guild(g.id).name)
-            commands = await manage_commands.get_all_commands(bot_id=get_bot_id(IS_TEST),bot_token=TOKEN, guild_id=g.id)
+            commands = await manage_commands.get_all_commands(bot_id=get_bot_id(IS_TEST), bot_token=TOKEN,
+                                                              guild_id=g.id)
             for c in commands:
                 if (c["name"] == "populatecommands"):
                     continue
@@ -707,7 +709,7 @@ if __name__ == '__main__':
             # print(command_dict[command].options)
             await add_manage(guild_id, command_dict[command])
             add_slash(guild_id, command_dict[command])
-        await ctx.send(content="Commands Populated",hidden=True)
+        await ctx.send(content="Commands Populated", hidden=True)
 
 
     # Todo: start thread to refresh stream subscriptions every 24 hours
