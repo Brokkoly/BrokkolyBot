@@ -222,7 +222,7 @@ class BrokkolyBot(commands.Bot):
             return EXPECTED_SYNTAX_ERROR
         if len(command) >= 20:
             return COMMAND_TOO_LONG_ERROR
-        if len(new_entry) > 1500:
+        if len(new_entry) > 2000:
             return NEW_VALUE_TOO_LONG_ERROR
         if command in self.protected_commands:
             return PROTECTED_COMMAND_ERROR
