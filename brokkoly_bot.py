@@ -46,6 +46,7 @@ bot_test_channel_ids = {
     "test": 718850430049714267,
     "prod": 718854497245462588
 }
+fix_embed_enabled_servers = [368078887361708033, 225374061386006528]
 
 token_spec = util.find_spec('tokens')
 if token_spec is not None:
@@ -104,6 +105,9 @@ class BrokkolyBot(commands.Bot):
         self.after_add_compiled_regex = re.compile(r'(?<!.)(?!!?[aA]dd)!?[A-zA-Z]{3,} .+', re.DOTALL)
         self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
+        self.fix_embed_regex = re.compile(r'https?:\/\/(?:www\.)?(x|twitter|tiktok){1}\.com/\S+')
+        self.x_or_twitter_url = re.compile(r'https?:\/\/(?:www\.)?(x|twitter){1}\.com');
+        self.tiktok_url = re.compile(r'https?:\/\/(?:www\.)?tiktok\.com');
         self.prefixes = {}
         intents = discord.Intents.default()
         intents.members = True
@@ -156,14 +160,31 @@ class BrokkolyBot(commands.Bot):
             return
         if message.channel.type == discord.ChannelType.private:
             return
+
         try:
             # todo: make it not print about an exception on every message
             await self.process_commands(message)
         except discord.ext.commands.errors.CommandNotFound:
             pass
-        if not message.content.startswith(self.prefix(None, message)):
-            return
 
+        if message.content.startswith(self.prefix(None, message)):
+            await self.handle_command(message)
+        if message.channel.id in fix_embed_enabled_servers:
+            await self.try_fix_embeds(message)
+
+    @client.event
+    async def on_guild_join(self, guild):
+        self.bot_database.add_server(guild.id, 30)
+        return
+
+    @client.event
+    async def on_guild_remove(self, guild):
+        # remove_server(conn, guild.id)
+        return
+
+    # endregion events
+
+    async def handle_command(self, message):
         command = message.content.lower()[1:]
         command, to_search = self.parse_search(command)
         msg = self.bot_database.get_message(message.guild.id, command, to_search,
@@ -179,18 +200,6 @@ class BrokkolyBot(commands.Bot):
                 return
         self.last_message_time[message.guild.id] = message.created_at
         await message.channel.send(msg)
-
-    @client.event
-    async def on_guild_join(self, guild):
-        self.bot_database.add_server(guild.id, 30)
-        return
-
-    @client.event
-    async def on_guild_remove(self, guild):
-        # remove_server(conn, guild.id)
-        return
-
-    # endregion events
 
     async def handle_add(self, message, command, new_entry, mod_only=False):
         """add the value in message to the the database"""
@@ -302,6 +311,25 @@ class BrokkolyBot(commands.Bot):
             return [command, message]
         else:
             return []
+
+    async def try_fix_embeds(self, message):
+        matches = re.match(self.fix_embed_regex, message.content)
+        if not matches:
+            return False
+        new_links = self.fix_bad_embeds(matches)
+        newMessage = '\n'.join(new_links)
+        # try:
+        #     message.embeds.remove()
+        message.channel.send(newMessage)
+
+    def fix_bad_embeds(self, links):
+        new_links = []
+        for link in links:
+            if (re.match(self.x_or_twitter_url), link):
+                new_links.append(re.sub(self.x_or_twitter_url, 'https://vxtwitter.com'))
+            if (re.match(self.tiktok_url), link):
+                new_links.append(re.sub(self.tiktok_url, 'https://vxtiktok.com'))
+        return new_links
 
     @staticmethod
     def parse_cooldown(content):
