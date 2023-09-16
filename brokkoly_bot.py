@@ -65,7 +65,12 @@ else:
 
 conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
-client = discord.Client()
+intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True
+intents.moderation = True
+intents.members = True
+client = discord.Client(intents=intents)
 
 command_map = {}
 
@@ -105,12 +110,15 @@ class BrokkolyBot(commands.Bot):
         self.after_add_compiled_regex = re.compile(r'(?<!.)(?!!?[aA]dd)!?[A-zA-Z]{3,} .+', re.DOTALL)
         self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
-        self.fix_embed_regex = re.compile(r'https?:\/\/(?:www\.)?(x|twitter|tiktok){1}\.com/\S+')
-        self.x_or_twitter_url = re.compile(r'https?:\/\/(?:www\.)?(x|twitter){1}\.com');
-        self.tiktok_url = re.compile(r'https?:\/\/(?:www\.)?tiktok\.com');
+        self.fix_embed_regex = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter|tiktok){1}\.com/\S+)')
+        self.x_or_twitter_url = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter){1}\.com)')
+        self.tiktok_url = re.compile(r'(https?:\/\/(?:www\.)?tiktok\.com)')
         self.prefixes = {}
         intents = discord.Intents.default()
+        intents.messages = True
+        intents.moderation = True
         intents.members = True
+        intents.message_content = True
 
         if not is_unit_test:
             self.token = token
@@ -169,8 +177,9 @@ class BrokkolyBot(commands.Bot):
 
         if message.content.startswith(self.prefix(None, message)):
             await self.handle_command(message)
-        if message.channel.id in fix_embed_enabled_servers:
+        if message.embeds and message.guild.id in fix_embed_enabled_servers:
             await self.try_fix_embeds(message)
+        return
 
     @client.event
     async def on_guild_join(self, guild):
@@ -313,22 +322,23 @@ class BrokkolyBot(commands.Bot):
             return []
 
     async def try_fix_embeds(self, message):
-        matches = re.match(self.fix_embed_regex, message.content)
+        matches = re.findall(self.fix_embed_regex, message.content)
         if not matches:
             return False
         new_links = self.fix_bad_embeds(matches)
         newMessage = '\n'.join(new_links)
         # try:
         #     message.embeds.remove()
-        message.channel.send(newMessage)
+        await message.reply(newMessage, mention_author=False)
+        await message.edit(suppress=True)
 
-    def fix_bad_embeds(self, links):
+    def fix_bad_embeds(self, matches):
         new_links = []
-        for link in links:
-            if (re.match(self.x_or_twitter_url), link):
-                new_links.append(re.sub(self.x_or_twitter_url, 'https://vxtwitter.com'))
-            if (re.match(self.tiktok_url), link):
-                new_links.append(re.sub(self.tiktok_url, 'https://vxtiktok.com'))
+        for link in matches:
+            if (re.search(self.x_or_twitter_url, link[0])):
+                new_links.append(re.sub(self.x_or_twitter_url, 'https://vxtwitter.com', link[0]))
+            if re.search(self.tiktok_url, link[0]):
+                new_links.append(re.sub(self.tiktok_url, 'https://vxtiktok.com', link[0]))
         return new_links
 
     @staticmethod
