@@ -67,8 +67,8 @@ conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
 intents = discord.Intents.default()
 intents.messages = True
-intents.message_content = True
-intents.moderation = True
+# intents.message_content = True
+# intents.moderation = True
 intents.members = True
 client = discord.Client(intents=intents)
 
@@ -117,9 +117,9 @@ class BrokkolyBot(commands.Bot):
         self.prefixes = {}
         intents = discord.Intents.default()
         intents.messages = True
-        intents.moderation = True
+        # intents.moderation = True
         intents.members = True
-        intents.message_content = True
+        # intents.message_content = True
 
         if not is_unit_test:
             self.token = token
