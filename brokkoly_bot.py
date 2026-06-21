@@ -46,7 +46,7 @@ bot_test_channel_ids = {
     "test": 718850430049714267,
     "prod": 718854497245462588
 }
-fix_embed_enabled_servers = [368078887361708033, 225374061386006528]
+fix_embed_enabled_servers = [225374061386006528]
 
 token_spec = util.find_spec('tokens')
 if token_spec is not None:
@@ -110,7 +110,7 @@ class BrokkolyBot(commands.Bot):
         self.after_add_compiled_regex = re.compile(r'(?<!.)(?!!?[aA]dd)!?[A-zA-Z]{3,} .+', re.DOTALL)
         self.remove_compiled_regex = re.compile(r'(?<!.)[a-zA-z]{3,20} ([0-9]{1,10}|\*)(?!.)')
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
-        self.fix_embed_regex = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter|tiktok|instagram){1}\.com/\S+)')
+        self.fix_embed_regex = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter|instagram){1}\.com/\S+)')
         self.x_or_twitter_url = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter){1}\.com)')
         # self.tiktok_url = re.compile(r'(https?:\/\/(?:www\.)?tiktok\.com)')
         self.instagram_url = re.compile(r'(https?:\/\/(?:www\.)?instagram\.com)')
