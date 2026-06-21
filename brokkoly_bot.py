@@ -178,7 +178,7 @@ class BrokkolyBot(commands.Bot):
 
         if message.content.startswith(self.prefix(None, message)):
             await self.handle_command(message)
-        if message.embeds and message.guild.id in fix_embed_enabled_servers:
+        if message.guild.id in fix_embed_enabled_servers:
             await self.try_fix_embeds(message)
         return
 
@@ -341,7 +341,7 @@ class BrokkolyBot(commands.Bot):
             if re.search(self.tiktok_url, link[0]):
                 new_links.append(re.sub(self.tiktok_url, 'https://vxtiktok.com', link[0]))
             if re.search(self.instagram_url, link[0]):
-                new_links.append(re.sub(self.tiktok_url, 'https://ddinstagram.com', link[0]))
+                new_links.append(re.sub(self.instagram_url, 'https://ddinstagram.com', link[0]))
         return new_links
 
     @staticmethod
