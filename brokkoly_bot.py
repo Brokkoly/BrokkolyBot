@@ -112,7 +112,7 @@ class BrokkolyBot(commands.Bot):
         self.command_compiled_regex = re.compile(r'[a-zA-Z]+')
         self.fix_embed_regex = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter|tiktok|instagram){1}\.com/\S+)')
         self.x_or_twitter_url = re.compile(r'(https?:\/\/(?:www\.)?(x|twitter){1}\.com)')
-        self.tiktok_url = re.compile(r'(https?:\/\/(?:www\.)?tiktok\.com)')
+        # self.tiktok_url = re.compile(r'(https?:\/\/(?:www\.)?tiktok\.com)')
         self.instagram_url = re.compile(r'(https?:\/\/(?:www\.)?instagram\.com)')
         self.prefixes = {}
         intents = discord.Intents.default()
@@ -337,11 +337,11 @@ class BrokkolyBot(commands.Bot):
         new_links = []
         for link in matches:
             if (re.search(self.x_or_twitter_url, link[0])):
-                new_links.append(re.sub(self.x_or_twitter_url, 'https://vxtwitter.com', link[0]))
-            if re.search(self.tiktok_url, link[0]):
-                new_links.append(re.sub(self.tiktok_url, 'https://vxtiktok.com', link[0]))
+                new_links.append(re.sub(self.x_or_twitter_url, 'https://fxtwitter.com', link[0]))
+            # if re.search(self.tiktok_url, link[0]):
+            #     new_links.append(re.sub(self.tiktok_url, 'https://vxtiktok.com', link[0]))
             if re.search(self.instagram_url, link[0]):
-                new_links.append(re.sub(self.tiktok_url, 'https://ddinstagram.com', link[0]))
+                new_links.append(re.sub(self.tiktok_url, 'https://kkinstagram.com', link[0]))
         return new_links
 
     @staticmethod
